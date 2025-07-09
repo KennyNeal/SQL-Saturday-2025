@@ -5,13 +5,13 @@ $query = "SELECT TOP 10 First_Name, Last_Name, Email, Job_Title, Company, Lunch_
 $BaseFolder = "C:\Users\kneal\OneDrive\Documents\SQL Saturday 2025"
 # Paths
 $sqlSatLogoPath = Join-Path $BaseFolder "Images\SQL_2025.png"
-$sponsorFolder  = Join-Path $BaseFolder "Images\Sponsor Logos\Raffle"
-$outputFolder   = Join-Path $BaseFolder "SpeedPass"
-$rawFolder      = Join-Path $outputFolder "raw"
+$sponsorFolder = Join-Path $BaseFolder "Images\Sponsor Logos\Raffle"
+$outputFolder = Join-Path $BaseFolder "SpeedPass"
+$rawFolder = Join-Path $outputFolder "raw"
 
 # Ensure folders exist
 if (!(Test-Path $outputFolder)) { New-Item -ItemType Directory -Path $outputFolder }
-if (!(Test-Path $rawFolder))    { New-Item -ItemType Directory -Path $rawFolder }
+if (!(Test-Path $rawFolder)) { New-Item -ItemType Directory -Path $rawFolder }
 
 # Load SQLSatBR logo
 $sqlSatLogoBase64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes($sqlSatLogoPath))
@@ -24,43 +24,44 @@ $connection.Open()
 $reader = $command.ExecuteReader()
 $attendees = @()
 while ($reader.Read()) {
-    $attendees += [PSCustomObject]@{
-        FirstName  = $reader["First_Name"]
-        LastName   = $reader["Last_Name"]
-        Email      = $reader["Email"]
-        JobTitle   = $reader["Job_Title"]
-        Company    = $reader["Company"]
-        LunchType  = $reader["Lunch_Type"]
-        Barcode  = $reader["Barcode"]
-        vCardText  = $reader["vCard"]
-    }
+  $attendees += [PSCustomObject]@{
+    FirstName = $reader["First_Name"]
+    LastName  = $reader["Last_Name"]
+    Email     = $reader["Email"]
+    JobTitle  = $reader["Job_Title"]
+    Company   = $reader["Company"]
+    LunchType = $reader["Lunch_Type"]
+    Barcode   = $reader["Barcode"]
+    vCardText = $reader["vCard"]
+  }
 }
 $connection.Close()
 
 # Loop through attendees
 foreach ($a in $attendees) {
-    $fullName = "$($a.FirstName) $($a.LastName)"
-    $nameLastFirst = "$($a.LastName), $($a.FirstName)"
-    $safeName = $nameLastFirst -replace '\s', '_' -replace '[^\w]', ''
+  $fullName = "$($a.FirstName) $($a.LastName)"
+  $nameLastFirst = "$($a.LastName), $($a.FirstName)"
+  $safeName = $nameLastFirst -replace '\s', '_' -replace '[^\w]', ''
 
-    # Generate QR codes
-    $emailQRPath = Join-Path $rawFolder "$safeName-emailQR.png"
-    $orderQRPath = Join-Path $rawFolder "$safeName-orderQR.png"
-    $vCardQRPath = Join-Path $rawFolder "$safeName-vCardQR.png"
+  # Generate QR codes
+  $emailQRPath = Join-Path $rawFolder "$safeName-emailQR.png"
+  $orderQRPath = Join-Path $rawFolder "$safeName-orderQR.png"
+  $vCardQRPath = Join-Path $rawFolder "$safeName-vCardQR.png"
 
-    Invoke-WebRequest "https://api.qrserver.com/v1/create-qr-code/?data=$([System.Web.HttpUtility]::UrlEncode($a.Email))&size=150x150" -OutFile $emailQRPath
-    Invoke-WebRequest "https://api.qrserver.com/v1/create-qr-code/?data=$([System.Web.HttpUtility]::UrlEncode($a.Barcode))&size=150x150" -OutFile $orderQRPath
-    Invoke-WebRequest "https://api.qrserver.com/v1/create-qr-code/?data=$([System.Web.HttpUtility]::UrlEncode($a.vCardText))&size=150x150" -OutFile $vCardQRPath
+  Invoke-WebRequest "https://api.qrserver.com/v1/create-qr-code/?data=$([System.Web.HttpUtility]::UrlEncode($a.Email))&size=150x150" -OutFile $emailQRPath
+  Invoke-WebRequest "https://api.qrserver.com/v1/create-qr-code/?data=$([System.Web.HttpUtility]::UrlEncode($a.Barcode))&size=150x150" -OutFile $orderQRPath
+  Invoke-WebRequest "https://api.qrserver.com/v1/create-qr-code/?data=$([System.Web.HttpUtility]::UrlEncode($a.vCardText))&size=150x150" -OutFile $vCardQRPath
 
-    $emailQRBase64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes($emailQRPath))
-    $orderQRBase64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes($orderQRPath))
-    $vCardQRBase64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes($vCardQRPath))
+  $emailQRBase64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes($emailQRPath))
+  $orderQRBase64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes($orderQRPath))
+  $vCardQRBase64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes($vCardQRPath))
 
-    # Build HTML
-    $html = @"
+  # Build HTML
+  $html = @"
 <html><head>
 <style>
 body { margin: 0; padding: 0; font-family: Arial; }
+
 .sheet {
   display: grid;
   grid-template-columns: repeat(2, 3.5in);
@@ -149,8 +150,8 @@ body { margin: 0; padding: 0; font-family: Arial; }
 </head><body><div class="sheet">
 "@
 
-    # Header card
-    $html += @"
+  # Header card
+  $html += @"
 <div class="card">
  <div class="ticket-banner">#SQLSatBR 2025</div>
   <div class="left">
@@ -163,11 +164,11 @@ body { margin: 0; padding: 0; font-family: Arial; }
 </div>
 "@
 
-    # Raffle cards
-    Get-ChildItem -Path $sponsorFolder | Where-Object { $_.Extension -match '\.(png|jpg|jpeg)$' } | Sort-Object Name | ForEach-Object {
-        $logoBase64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes($_.FullName))
-        $ext = $_.Extension.Replace(".", "")
-        $html += @"
+  # Raffle cards
+  Get-ChildItem -Path $sponsorFolder | Where-Object { $_.Extension -match '\.(png|jpg|jpeg)$' } | Sort-Object Name | ForEach-Object {
+    $logoBase64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes($_.FullName))
+    $ext = $_.Extension.Replace(".", "")
+    $html += @"
 <div class="card">
   <div class="ticket-banner">#SQLSatBR 2025</div>
   <div class="left fit-text">
@@ -179,9 +180,9 @@ body { margin: 0; padding: 0; font-family: Arial; }
   <img src="data:image/png;base64,$vCardQRBase64" class="qr" />
 </div>
 "@
-    }
-      # Nametag
-    $html += @"
+  }
+  # Nametag
+  $html += @"
 <div class="card nametag">
   <div class="nametag-top">
     <img src="data:image/png;base64,$sqlSatLogoBase64" class="logo" />
@@ -206,18 +207,20 @@ window.addEventListener("DOMContentLoaded", () => {
 </body></html>
 "@
 
-# Save and generate PDF using Chrome headless mode
-$htmlPath = Join-Path $outputFolder "$safeName.html"
-$pdfPath  = Join-Path $outputFolder "$safeName.pdf"
-$chromePath = "C:\Program Files\Google\Chrome\Application\chrome.exe"
-Set-Content -Path $htmlPath -Value $html -Encoding UTF8
+  # Save and generate PDF using Chrome headless mode
+  $htmlPath = Join-Path $outputFolder "$safeName.html"
+  $pdfPath = Join-Path $outputFolder "$safeName.pdf"
+  Set-Content -Path $htmlPath -Value $html -Encoding UTF8
 
-Start-Process -FilePath $chromePath -ArgumentList @(
+  Start-Process -FilePath msedge.exe -ArgumentList @(
     "--headless=new",
     "--print-to-pdf=`"$pdfPath`"",
     "--no-margins",
-    "file:///$htmlPath"
-) -Wait
+    "`"file:///$htmlPath`"",
+    "--disable-gpu",
+    "--disable-extensions",
+    "--no-pdf-header-footer"
+  ) -Wait
 
-Write-Host "PDF generated for $fullName`: $pdfPath"
+  Write-Host "PDF generated for $fullName`: $pdfPath"
 }
