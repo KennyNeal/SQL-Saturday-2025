@@ -170,7 +170,7 @@ body { margin: 0; padding: 0; font-family: Arial; }
     $ext = $_.Extension.Replace(".", "")
     $html += @"
 <div class="card">
-  <div class="ticket-banner">#SQLSatBR 2025</div>
+  <div class="ticket-banner">#SQLSatBR 2025 - Raffle Ticket</div>
   <div class="left fit-text">
     <img src="data:image/$ext;base64,$logoBase64" class="logo" />
     <div class="raffle-footer">
@@ -223,4 +223,4 @@ window.addEventListener("DOMContentLoaded", () => {
   ) -Wait
 
   Write-Host "PDF generated for $fullName`: $pdfPath"
-}
+} 
