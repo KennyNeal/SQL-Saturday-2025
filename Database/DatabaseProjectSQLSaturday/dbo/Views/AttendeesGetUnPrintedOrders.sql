@@ -5,6 +5,7 @@ AS
         TOP 100 PERCENT
         agupob.rownumber,
         agupob.Barcode,
+        agupob.[Order],
         agupob.Order_Date,
         agupob.First_Name,
         agupob.Last_Name,
