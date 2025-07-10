@@ -1,6 +1,6 @@
 # CONFIGURATION
 $connectionString = "Server=localhost\SQLEXPRESS;Database=SQLSaturday;Integrated Security=SSPI;"
-$query = "SELECT TOP 10 First_Name, Last_Name, Email, Job_Title, Company, Lunch_Type, Barcode, vCard FROM dbo.AttendeesGetUnPrintedOrders WHERE Last_Name = 'Neal'"
+$query = "SELECT First_Name, Last_Name, Email, Job_Title, Company, Lunch_Type, Barcode, vCard FROM dbo.AttendeesGetUnPrintedOrders"
 
 $BaseFolder = "C:\Users\kneal\OneDrive\Documents\SQL Saturday 2025"
 # Paths
@@ -48,9 +48,15 @@ foreach ($a in $attendees) {
   $orderQRPath = Join-Path $rawFolder "$safeName-orderQR.png"
   $vCardQRPath = Join-Path $rawFolder "$safeName-vCardQR.png"
 
-  Invoke-WebRequest "https://api.qrserver.com/v1/create-qr-code/?data=$([System.Web.HttpUtility]::UrlEncode($a.Email))&size=150x150" -OutFile $emailQRPath
-  Invoke-WebRequest "https://api.qrserver.com/v1/create-qr-code/?data=$([System.Web.HttpUtility]::UrlEncode($a.Barcode))&size=150x150" -OutFile $orderQRPath
-  Invoke-WebRequest "https://api.qrserver.com/v1/create-qr-code/?data=$([System.Web.HttpUtility]::UrlEncode($a.vCardText))&size=150x150" -OutFile $vCardQRPath
+  if (!(Test-Path $emailQRPath)) {
+    Invoke-WebRequest "https://api.qrserver.com/v1/create-qr-code/?data=$([System.Web.HttpUtility]::UrlEncode($a.Email))&size=150x150" -OutFile $emailQRPath
+  }
+  if (!(Test-Path $orderQRPath)) {
+    Invoke-WebRequest "https://api.qrserver.com/v1/create-qr-code/?data=$([System.Web.HttpUtility]::UrlEncode($a.Barcode))&size=150x150" -OutFile $orderQRPath
+  }
+  if (!(Test-Path $vCardQRPath)) {
+    Invoke-WebRequest "https://api.qrserver.com/v1/create-qr-code/?data=$([System.Web.HttpUtility]::UrlEncode($a.vCardText))&size=150x150" -OutFile $vCardQRPath
+  }
 
   $emailQRBase64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes($emailQRPath))
   $orderQRBase64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes($orderQRPath))
@@ -85,22 +91,37 @@ body { margin: 0; padding: 0; font-family: Arial; }
 .left {
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
-  align-items: center;
-  flex: 1;
+  justify-content: flex-end;
+  align-items: flex-start;
+  flex: 1 1 0;
   padding-right: 0.2in;
+  min-width: 1.5in;
+  /* allow it to grow vertically */
 }
-.footer { margin-top: auto; font-size: 9pt; }
+.footer { 
+  margin-top: auto; 
+  font-size: 9pt; 
+  text-align: center; /* Center the footer text */
+}
 .logo {
   width: 1.5in;
   height: 0.6in;
   object-fit: contain;
   margin-bottom: 0.05in;
 }
+.qr-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  width: 1.4in;
+  min-width: 1.2in;
+}
 .qr {
   width: 1.2in;
   height: 1.2in;
   object-fit: contain;
+  margin-bottom: 0.05in;
 }
 .card.nametag {
   flex-direction: column;
@@ -146,6 +167,20 @@ body { margin: 0; padding: 0; font-family: Arial; }
   text-align: center;
   font-size: 9pt;
 }
+.raffle-name {
+  font-weight: bold;
+  margin-top: 0.05in;
+  text-align: left;
+  font-size: 10pt;
+  word-break: break-word;
+}
+.email-text {
+  font-size: 9pt;
+  text-align: left;
+  word-break: break-all;
+  margin-top: 0.02in;
+  /* REMOVE max-width and white-space */
+}
 </style>
 </head><body><div class="sheet">
 "@
@@ -170,14 +205,17 @@ body { margin: 0; padding: 0; font-family: Arial; }
     $ext = $_.Extension.Replace(".", "")
     $html += @"
 <div class="card">
-  <div class="ticket-banner">#SQLSatBR 2025 - Raffle Ticket</div>
-  <div class="left fit-text">
+  <div class="ticket-banner">#SQLSatBR 2025</div>
+
+  <div class="left">
     <img src="data:image/$ext;base64,$logoBase64" class="logo" />
-    <div class="raffle-footer">
-      <strong>$fullName</strong><br/>$($a.Email)
-    </div>
+    <div class="raffle-name">$fullName</div>
+    <div class="email-text">$($a.Email)</div>
   </div>
-  <img src="data:image/png;base64,$vCardQRBase64" class="qr" />
+
+  <div class="qr-block">
+    <img src="data:image/png;base64,$vCardQRBase64" class="qr" />
+  </div>
 </div>
 "@
   }
@@ -223,4 +261,5 @@ window.addEventListener("DOMContentLoaded", () => {
   ) -Wait
 
   Write-Host "PDF generated for $fullName`: $pdfPath"
-} 
+  Start-Sleep -Seconds 5  # Add this line to throttle PDF generation
+}
