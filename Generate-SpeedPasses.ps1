@@ -205,7 +205,7 @@ body { margin: 0; padding: 0; font-family: Arial; }
     $ext = $_.Extension.Replace(".", "")
     $html += @"
 <div class="card">
-  <div class="ticket-banner">#SQLSatBR 2025</div>
+  <div class="ticket-banner">#SQLSatBR 2025 - Raffle Ticket</div>
 
   <div class="left">
     <img src="data:image/$ext;base64,$logoBase64" class="logo" />
