@@ -1,1 +1,31 @@
+# Ignore all SpeedPass subfolders
 SpeedPass/**
+
+# Ignore database files
+*.mdf
+*.ldf
+*.ndf
+
+# Ignore backup files
+*.bak
+
+# Ignore log files
+*.log
+
+# Ignore temporary files
+*.tmp
+*.temp
+
+# Ignore Visual Studio files
+.vs/
+*.suo
+*.user
+*.userprefs
+*.sln.docstates
+
+# Ignore build output
+bin/
+obj/
+
+# Ignore NuGet packages
+*.nupkg
