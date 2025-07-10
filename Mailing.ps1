@@ -1,12 +1,12 @@
 # CONFIGURATION
 $connectionString = "Server=localhost\SQLEXPRESS;Database=SQLSaturday;Integrated Security=SSPI;"
-$query = "SELECT First_Name, Last_Name, Email FROM dbo.AttendeesGetUnPrintedOrdersBase"
+$query = "SELECT First_Name, Last_Name, Email FROM dbo.AttendeesGetUnPrintedOrders"
 $outputFolder = "C:\Users\kneal\OneDrive\Documents\SQL Saturday 2025\SpeedPass"
-$credPath     = "C:\Users\kneal\gmail-cred.xml"
-$cred         = Import-Clixml -Path $credPath
-$from         = $cred.UserName
-$smtp         = "smtp.gmail.com"
-$port         = 587
+$credPath = "C:\Users\kneal\gmail-cred.xml"
+$cred = Import-Clixml -Path $credPath
+$from = $cred.UserName
+$smtp = "smtp.gmail.com"
+$port = 587
 
 # FETCH ATTENDEE EMAILS
 $connection = New-Object System.Data.SqlClient.SqlConnection $connectionString
@@ -31,20 +31,43 @@ foreach ($a in $attendees) {
     $pdfPath = Join-Path $outputFolder "$safeName.pdf"
 
     if (Test-Path $pdfPath) {
-        $subject = "Your SQL Saturday SpeedPass"
+        $subject = "See You at SQL Saturday Baton Rouge 2025!"
         $body = @"
-Hi $($a.FirstName),
+<p>Hi $($a.FirstName),</p>
 
-Attached is your personalized speed pass for SQL Saturday 2025.
+<p>Your personalized SpeedPass for SQL Saturday Baton Rouge 2025 is attached!</p>
 
-Please print it or bring it digitally to the event—we’ll scan your badge at check-in and your raffle tickets will be ready to roll!
+<p><b>Please print your SpeedPass and bring it with you to the event.</b> This will help us check you in quickly and get you to the sessions and raffle tickets faster.</p>
 
-See you soon!
+<p>We still have seats available for both of our pre-conference sessions:</p>
+<ul>
+  <li>
+    <b>Jumpstart Your Power BI Skills: A Hands on Workshop</b><br>
+    <a href='https://www.sqlsatbr.com/precons#h.nlb272c3ff5i'>Register here</a>
+  </li>
+  <li>
+    <b>Become immediately effective with PowerShell</b><br>
+    <a href='https://www.sqlsatbr.com/precons#h.dg9pejggrn5z'>Register here</a>
+  </li>
+</ul>
+
+<p>Interested in helping out?<br>
+Sign up to volunteer here:<br>
+<a href='https://www.signupgenius.com/go/4090C49AFAA2EA2FF2-57005830-sqlsaturday#/'>https://www.signupgenius.com/go/4090C49AFAA2EA2FF2-57005830-sqlsaturday#/</a>
+</p>
+
+<p>Please help us spread the word! Share our event on social media and invite your friends and colleagues.</p>
+
+<p>We look forward to seeing you soon!</p>
+
+<p>Best regards,<br>
+The SQL Saturday Baton Rouge Team</p>
 "@
         Send-MailMessage -To $a.Email -From $from -Subject $subject -Body $body `
-            -SmtpServer $smtp -Port $port -UseSsl -Credential $cred -Attachments $pdfPath
+            -SmtpServer $smtp -Port $port -UseSsl -Credential $cred -Attachments $pdfPath -BodyAsHtml -WarningAction SilentlyContinue
         Write-Host "✅ Sent: $safeName.pdf ➝ $($a.Email)"
-    } else {
+    }
+    else {
         Write-Host "⚠️ Skipped: No PDF found for $nameLastFirst"
     }
 }
