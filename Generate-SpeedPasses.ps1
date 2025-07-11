@@ -37,6 +37,14 @@ while ($reader.Read()) {
 }
 $connection.Close()
 
+# Preload sponsor logos as base64
+$sponsorLogos = @{}
+Get-ChildItem -Path $sponsorFolder | Where-Object { $_.Extension -match '\.(png|jpg|jpeg)$' } | Sort-Object Name | ForEach-Object {
+    $logoBase64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes($_.FullName))
+    $ext = $_.Extension.Replace(".", "")
+    $sponsorLogos[$_.Name] = @{ base64 = $logoBase64; ext = $ext }
+}
+
 # Loop through attendees
 foreach ($a in $attendees) {
   $fullName = "$($a.FirstName) $($a.LastName)"
@@ -205,19 +213,17 @@ body { margin: 0; padding: 0; font-family: Arial; }
 "@
 
   # Raffle cards
-  Get-ChildItem -Path $sponsorFolder | Where-Object { $_.Extension -match '\.(png|jpg|jpeg)$' } | Sort-Object Name | ForEach-Object {
-    $logoBase64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes($_.FullName))
-    $ext = $_.Extension.Replace(".", "")
+  foreach ($logo in $sponsorLogos.GetEnumerator()) {
+    $logoBase64 = $logo.Value.base64
+    $ext = $logo.Value.ext
     $html += @"
 <div class="card">
   <div class="ticket-banner">#SQLSatBR 2025 - Raffle Ticket</div>
-
   <div class="left">
     <img src="data:image/$ext;base64,$logoBase64" class="logo" />
     <div class="raffle-name">$fullName</div>
     <div class="email-text">$($a.Email)</div>
   </div>
-
   <div class="qr-block">
     <img src="data:image/png;base64,$vCardQRBase64" class="qr" />
   </div>
@@ -266,5 +272,5 @@ window.addEventListener("DOMContentLoaded", () => {
   ) -Wait
 
   Write-Host "PDF generated for $fullName`: $pdfPath"
-  Start-Sleep -Seconds 10  # Add this line to throttle PDF generation
+  Start-Sleep -Seconds 5  # Add this line to throttle PDF generation
 }

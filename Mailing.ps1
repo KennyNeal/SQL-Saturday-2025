@@ -1,6 +1,6 @@
 # CONFIGURATION
 $connectionString = "Server=localhost\SQLEXPRESS;Database=SQLSaturday;Integrated Security=SSPI;"
-$query = "SELECT First_Name, Last_Name, Email FROM dbo.AttendeesGetUnPrintedOrders"
+$query = "SELECT Barcode, First_Name, Last_Name, Email FROM dbo.AttendeesGetUnPrintedOrders"
 $outputFolder = "C:\Users\kneal\OneDrive\Documents\SQL Saturday 2025\SpeedPass"
 $credPath = "C:\Users\kneal\gmail-cred.xml"
 $cred = Import-Clixml -Path $credPath
@@ -17,6 +17,7 @@ $reader = $command.ExecuteReader()
 $attendees = @()
 while ($reader.Read()) {
     $attendees += [PSCustomObject]@{
+        Barcode   = $reader["Barcode"]
         FirstName = $reader["First_Name"]
         LastName  = $reader["Last_Name"]
         Email     = $reader["Email"]
@@ -33,6 +34,8 @@ foreach ($a in $attendees) {
     if (Test-Path $pdfPath) {
         $subject = "See You at SQL Saturday Baton Rouge 2025!"
         $body = @"
+<p style='color: red; font-weight: bold;'>There was an issue with our first batch of emails. We're sorry if you have received this twice.</p>
+
 <p>Hi $($a.FirstName),</p>
 
 <p>Your personalized SpeedPass for SQL Saturday Baton Rouge 2025 is attached!</p>
@@ -63,11 +66,27 @@ Sign up to volunteer here:<br>
 <p>Best regards,<br>
 The SQL Saturday Baton Rouge Team</p>
 "@
-        Send-MailMessage -To $a.Email -From $from -Subject $subject -Body $body `
-            -SmtpServer $smtp -Port $port -UseSsl -Credential $cred -Attachments $pdfPath -BodyAsHtml -WarningAction SilentlyContinue
-        Write-Host "✅ Sent: $safeName.pdf ➝ $($a.Email)"
+        try {
+            Send-MailMessage -To $a.Email -From $from -Subject $subject -Body $body `
+                -SmtpServer $smtp -Port $port -UseSsl -Credential $cred -Attachments $pdfPath -BodyAsHtml -WarningAction SilentlyContinue
+            Write-Host "✅ Sent: $safeName.pdf ➝ $($a.Email)"
+            # Log successful send to AttendeesPrinted table using Barcode
+            $insertConn = New-Object System.Data.SqlClient.SqlConnection $connectionString
+            $insertCmd = $insertConn.CreateCommand()
+            $insertCmd.CommandText = "INSERT INTO dbo.AttendeesPrinted (Barcode) VALUES (@Barcode)"
+            $insertCmd.Parameters.Add((New-Object Data.SqlClient.SqlParameter("@Barcode", $a.Barcode))) | Out-Null
+            $insertConn.Open()
+            $insertCmd.ExecuteNonQuery() | Out-Null
+            Write-Host "✅ Logged print for $($a.Barcode)"
+            $insertConn.Close()
+            Start-Sleep -Seconds 2
+        } catch {
+            Write-Host "❌ Error sending to $($a.Email): $_"
+            Add-Content -Path "$outputFolder\send_errors.txt" -Value "$($a.Email): $_"
+        }
     }
     else {
         Write-Host "⚠️ Skipped: No PDF found for $nameLastFirst"
+        Add-Content -Path "$outputFolder\skipped.txt" -Value $nameLastFirst
     }
 }
