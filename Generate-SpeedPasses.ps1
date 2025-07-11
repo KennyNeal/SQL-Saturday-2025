@@ -68,12 +68,16 @@ foreach ($a in $attendees) {
 <style>
 body { margin: 0; padding: 0; font-family: Arial; }
 
+@page {
+  size: Letter;
+  margin: 0.35in;
+}
+
 .sheet {
   display: grid;
   grid-template-columns: repeat(2, 3.5in);
   grid-template-rows: repeat(5, 2in);
-  gap: 0.2in;
-  padding: 0.5in;
+  padding: 0.25in;
 }
 .card {
   width: 3.5in;
@@ -85,8 +89,9 @@ body { margin: 0; padding: 0; font-family: Arial; }
   justify-content: space-between;
   align-items: stretch;
   position: relative;
-  padding: 0.4in 0.15in 0.1in 0.15in;
+  padding: 0.5in 0.25in 0.2in 0.25in;
   font-size: 9pt;
+  break-inside: avoid;
 }
 .left {
   display: flex;
@@ -245,7 +250,7 @@ window.addEventListener("DOMContentLoaded", () => {
 </body></html>
 "@
 
-  # Save and generate PDF using Chrome headless mode
+  # Save and generate PDF using Edge headless mode
   $htmlPath = Join-Path $outputFolder "$safeName.html"
   $pdfPath = Join-Path $outputFolder "$safeName.pdf"
   Set-Content -Path $htmlPath -Value $html -Encoding UTF8
@@ -261,5 +266,5 @@ window.addEventListener("DOMContentLoaded", () => {
   ) -Wait
 
   Write-Host "PDF generated for $fullName`: $pdfPath"
-  Start-Sleep -Seconds 5  # Add this line to throttle PDF generation
+  Start-Sleep -Seconds 10  # Add this line to throttle PDF generation
 }
