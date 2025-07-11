@@ -8,6 +8,10 @@ $from = $cred.UserName
 $smtp = "smtp.gmail.com"
 $port = 587
 
+# Email banner configuration
+$showBanner = $false
+$bannerHtml = "<p style='color: red; font-weight: bold;'>There was an issue with our first batch of emails. We're sorry if you have received this twice.</p>"
+
 # FETCH ATTENDEE EMAILS
 $connection = New-Object System.Data.SqlClient.SqlConnection $connectionString
 $command = $connection.CreateCommand()
@@ -34,7 +38,7 @@ foreach ($a in $attendees) {
     if (Test-Path $pdfPath) {
         $subject = "See You at SQL Saturday Baton Rouge 2025!"
         $body = @"
-<p style='color: red; font-weight: bold;'>There was an issue with our first batch of emails. We're sorry if you have received this twice.</p>
+$(if ($showBanner) { $bannerHtml } else { "" })
 
 <p>Hi $($a.FirstName),</p>
 
