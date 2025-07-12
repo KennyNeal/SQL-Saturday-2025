@@ -64,7 +64,7 @@ END:VCARD
             FROM
                 dbo.AttendeesPrinted AS ap
             WHERE
-                ap.[Order] = a.[Order]
+                ap.[Barcode] = a.[Barcode]
         )
         --AND a.Total_Paid < 150.00
     ORDER BY
