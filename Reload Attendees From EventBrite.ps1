@@ -4,7 +4,9 @@
 
 # CONFIGURATION
 #Get Eventbrite API token from https://www.eventbrite.com/platform/api-keys
-$token = Get-Secret -Name EventbriteToken
+# Store it securely using Secret Management module
+
+$token = Get-Secret -Name EventbriteToken | ConvertFrom-SecureString -AsPlainText
 $header = @{ Authorization = "Bearer $token" }
 $eventId = "1228684160399" # Replace with your actual Eventbrite event ID from web (easy) or API.
 
@@ -37,59 +39,51 @@ $truncateCmd = $connection.CreateCommand()
 $truncateCmd.CommandText = "TRUNCATE TABLE dbo.Attendees"
 $truncateCmd.ExecuteNonQuery() | Out-Null
 
-# Insert each attendee
+# Insert each attendee using stored procedure
 foreach ($a in $attendees) {
-    $profile = $a.profile
+    $attendeeprofile = $a.profile
     $answers = $a.answers
-
-    # Map fields
-    $fields = @{
-        "Order"                                         = $a.order_id
-        "Order_Date"                                    = $a.created
-        "Prefix"                                        = $profile.prefix
-        "First_Name"                                    = $profile.first_name
-        "Last_Name"                                     = $profile.last_name
-        "Email"                                         = $profile.email
-        "Quantity"                                      = $a.quantity
-        "Ticket_Type"                                   = $a.ticket_class_name
-        "Attendee"                                      = $profile.name
-        "Barcode"                                       = if ($a.barcodes) { ($a.barcodes | Select-Object -First 1).barcode } else { $null }
-        "Order_Type"                                    = $null
-        "Attendee_Status"                               = $a.status
-        "Home_Address_1"                                = $null
-        "Home_Address_2"                                = $null
-        "Home_City"                                     = $null
-        "Home_State"                                    = $null
-        "Home_Zip"                                      = $null
-        "Home_Country"                                  = $null
-        "Cell_Phone"                                    = $null
-        "Accept_Code_of_Conduct"                        = Get-Answer $answers "Code of Conduct"
-        "Lunch_Type"                                    = Get-Answer $answers "Lunch Type"
-        "Are_you_willing_to_volunteer_during_the_event" = Get-Answer $answers "volunteer"
-        "Twitter_X_UserName"                            = Get-Answer $answers "Twitter"
-        "LinkedIn_URL"                                  = $null
-        "Job_Title"                                     = $profile.job_title
-        "Company"                                       = $profile.company
-        "Work_Phone"                                    = $null
-        "Website"                                       = $profile.website
-        "Blog"                                          = $null
+    $barcode = $null
+    if ($a.barcodes) {
+        $barcode = ($a.barcodes | Select-Object -First 1).barcode
     }
-
-    # Filter out nulls
-    $nonNullFields = $fields.GetEnumerator() | Where-Object { $_.Value -ne $null }
-    $columns = ($nonNullFields | ForEach-Object { "[$($_.Key)]" }) -join ", "
-    $params = ($nonNullFields | ForEach-Object { "@$($_.Key)" }) -join ", "
 
     $cmd = $connection.CreateCommand()
-    $cmd.CommandText = "INSERT INTO dbo.Attendees ($columns) VALUES ($params)"
+    $cmd.CommandType = [System.Data.CommandType]::StoredProcedure
+    $cmd.CommandText = "dbo.AttendeesInsert"
 
-    foreach ($item in $nonNullFields) {
-        $cmd.Parameters.AddWithValue("@$($item.Key)", $item.Value) | Out-Null
-    }
+    $cmd.Parameters.AddWithValue("@Order", $a.order_id) | Out-Null
+    $cmd.Parameters.AddWithValue("@Order_Date", $a.created) | Out-Null
+    $cmd.Parameters.AddWithValue("@Prefix", $attendeeprofile.prefix) | Out-Null
+    $cmd.Parameters.AddWithValue("@First_Name", $attendeeprofile.first_name) | Out-Null
+    $cmd.Parameters.AddWithValue("@Last_Name", $attendeeprofile.last_name) | Out-Null
+    $cmd.Parameters.AddWithValue("@Email", $attendeeprofile.email) | Out-Null
+    $cmd.Parameters.AddWithValue("@Quantity", $a.quantity) | Out-Null
+    $cmd.Parameters.AddWithValue("@Ticket_Type", $a.ticket_class_name) | Out-Null
+    $cmd.Parameters.AddWithValue("@Attendee", $attendeeprofile.name) | Out-Null
+    $cmd.Parameters.AddWithValue("@Barcode", $barcode) | Out-Null
+    $cmd.Parameters.AddWithValue("@Order_Type", $null) | Out-Null
+    $cmd.Parameters.AddWithValue("@Attendee_Status", $a.status) | Out-Null
+    $cmd.Parameters.AddWithValue("@Home_Address_1", $null) | Out-Null
+    $cmd.Parameters.AddWithValue("@Home_Address_2", $null) | Out-Null
+    $cmd.Parameters.AddWithValue("@Home_City", $null) | Out-Null
+    $cmd.Parameters.AddWithValue("@Home_State", $null) | Out-Null
+    $cmd.Parameters.AddWithValue("@Home_Zip", $null) | Out-Null
+    $cmd.Parameters.AddWithValue("@Home_Country", $null) | Out-Null
+    $cmd.Parameters.AddWithValue("@Cell_Phone", $null) | Out-Null
+    $cmd.Parameters.AddWithValue("@Accept_Code_of_Conduct", (Get-Answer $answers "Code of Conduct")) | Out-Null
+    $cmd.Parameters.AddWithValue("@Lunch_Type", (Get-Answer $answers "Lunch Type")) | Out-Null
+    $cmd.Parameters.AddWithValue("@Are_you_willing_to_volunteer_during_the_event", (Get-Answer $answers "volunteer")) | Out-Null
+    $cmd.Parameters.AddWithValue("@Twitter_X_UserName", (Get-Answer $answers "Twitter")) | Out-Null
+    $cmd.Parameters.AddWithValue("@LinkedIn_URL", $null) | Out-Null
+    $cmd.Parameters.AddWithValue("@Job_Title", $attendeeprofile.job_title) | Out-Null
+    $cmd.Parameters.AddWithValue("@Company", $attendeeprofile.company) | Out-Null
+    $cmd.Parameters.AddWithValue("@Work_Phone", $null) | Out-Null
+    $cmd.Parameters.AddWithValue("@Website", $attendeeprofile.website) | Out-Null
+    $cmd.Parameters.AddWithValue("@Blog", $null) | Out-Null
 
     $cmd.ExecuteNonQuery() | Out-Null
 }
-
 
 $connection.Close()
 Write-Host "Attendees table reloaded from Eventbrite."
