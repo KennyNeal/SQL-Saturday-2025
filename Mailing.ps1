@@ -1,44 +1,239 @@
+<#
+.SYNOPSIS
+Sends personalized SpeedPass emails to SQL Saturday attendees with PDF attachments.
+
+.DESCRIPTION
+This script fetches attendee information from a SQL Server database, validates PDF files,
+and sends personalized emails with SpeedPass attachments. Includes WhatIf support for 
+previewing operations before execution.
+
+.PARAMETER WhatIf
+Preview what emails would be sent without actually sending them or making database changes.
+
+.PARAMETER ShowBanner
+Include a warning banner in emails (useful for resend notifications).
+
+.PARAMETER ConnectionString
+SQL Server connection string. Defaults to localhost\SQLEXPRESS.
+
+.PARAMETER OutputFolder
+Path to folder containing PDF files. Defaults to current SpeedPass folder.
+
+.PARAMETER CredPath
+Path to encrypted Gmail credentials file. Defaults to standard location.
+
+.PARAMETER DelaySeconds
+Delay in seconds between each email. Defaults to 2 seconds.
+
+.PARAMETER BatchSize
+Number of emails to process in each batch. Defaults to 50.
+
+.EXAMPLE
+.\Mailing.ps1 -WhatIf
+Preview what emails would be sent without sending them.
+
+.EXAMPLE
+.\Mailing.ps1 -ShowBanner
+Send emails with warning banner included.
+
+.EXAMPLE
+.\Mailing.ps1 -DelaySeconds 5 -BatchSize 25
+Send emails with 5-second delays in batches of 25.
+
+.NOTES
+Requires Gmail app password stored in encrypted XML file.
+Creates error logs and skipped lists in the output folder.
+#>
+
+[CmdletBinding(SupportsShouldProcess)]
+param(
+    [switch]$ShowBanner = $false,
+    [string]$ConnectionString = "Server=localhost\SQLEXPRESS;Database=SQLSaturday;Integrated Security=SSPI;",
+    [string]$OutputFolder = "C:\Users\kneal\OneDrive\Documents\SQL Saturday 2025\SpeedPass",
+    [string]$CredPath = "C:\Users\kneal\gmail-cred.xml",
+    [int]$DelaySeconds = 2,
+    [int]$BatchSize = 50
+)
+
 # CONFIGURATION
-$connectionString = "Server=localhost\SQLEXPRESS;Database=SQLSaturday;Integrated Security=SSPI;"
-$query = "SELECT Barcode, First_Name, Last_Name, Email FROM dbo.AttendeesGetUnPrintedOrders"
-$outputFolder = "C:\Users\kneal\OneDrive\Documents\SQL Saturday 2025\SpeedPass"
-$credPath = "C:\Users\kneal\gmail-cred.xml"
-$cred = Import-Clixml -Path $credPath
-$from = $cred.UserName
+$getAttendeesQuery = "EXEC dbo.AttendeesGetForEmail"
+$markEmailedProc = "dbo.AttendeesMarkAsEmailed"
+$markBatchEmailedProc = "dbo.AttendeesMarkBatchAsEmailed"
 $smtp = "smtp.gmail.com"
 $port = 587
 
 # Email banner configuration
-$showBanner = $false
 $bannerHtml = "<p style='color: red; font-weight: bold;'>There was an issue with our first batch of emails. We're sorry if you have received this twice.</p>"
 
-# FETCH ATTENDEE EMAILS
-$connection = New-Object System.Data.SqlClient.SqlConnection $connectionString
-$command = $connection.CreateCommand()
-$command.CommandText = $query
-$connection.Open()
-$reader = $command.ExecuteReader()
-$attendees = @()
-while ($reader.Read()) {
-    $attendees += [PSCustomObject]@{
-        Barcode   = $reader["Barcode"]
-        FirstName = $reader["First_Name"]
-        LastName  = $reader["Last_Name"]
-        Email     = $reader["Email"]
-    }
+# Validate paths and credentials
+if (-not (Test-Path $CredPath)) {
+    throw "Credential file not found: $CredPath"
 }
-$connection.Close()
 
-# SEND EMAILS
+if (-not (Test-Path $OutputFolder)) {
+    throw "Output folder not found: $OutputFolder"
+}
+
+$cred = Import-Clixml -Path $CredPath
+$from = $cred.UserName
+
+Write-Host "=== SQL Saturday Email Sender ===" -ForegroundColor Cyan
+if ($WhatIfPreference) {
+    Write-Host "🔍 WHATIF MODE: No emails will be sent, no database changes will be made" -ForegroundColor Yellow
+}
+Write-Host "📁 Output Folder: $OutputFolder" -ForegroundColor Gray
+Write-Host "📧 From: $from" -ForegroundColor Gray
+Write-Host "🎛️  Banner Enabled: $ShowBanner" -ForegroundColor Gray
+
+# FETCH ATTENDEE EMAILS
+Write-Host "`n📊 Fetching attendees from database..." -ForegroundColor Green
+
+try {
+    $connection = New-Object System.Data.SqlClient.SqlConnection $ConnectionString
+    $command = $connection.CreateCommand()
+    $command.CommandText = $getAttendeesQuery
+    $connection.Open()
+    $reader = $command.ExecuteReader()
+    $attendees = @()
+    while ($reader.Read()) {
+        $attendees += [PSCustomObject]@{
+            Barcode   = $reader["Barcode"]
+            FirstName = $reader["First_Name"]
+            LastName  = $reader["Last_Name"]
+            Email     = $reader["Email"]
+            OrderDate = if ($reader["Order_Date"] -ne [DBNull]::Value) { $reader["Order_Date"] } else { $null }
+            JobTitle  = if ($reader["Job_Title"] -ne [DBNull]::Value) { $reader["Job_Title"] } else { "" }
+            Company   = if ($reader["Company"] -ne [DBNull]::Value) { $reader["Company"] } else { "" }
+        }
+    }
+    $connection.Close()
+    
+    Write-Host "✅ Found $($attendees.Count) attendees to process" -ForegroundColor Green
+    
+    if ($attendees.Count -eq 0) {
+        Write-Host "ℹ️  No attendees found. Exiting." -ForegroundColor Yellow
+        return
+    }
+} catch {
+    Write-Error "❌ Database error: $_"
+    return
+}
+
+# Validate PDF files and create processing summary
+$validAttendees = @()
+$missingPdfs = @()
+
+Write-Host "`n🔍 Validating PDF files..." -ForegroundColor Green
+
 foreach ($a in $attendees) {
     $nameLastFirst = "$($a.LastName), $($a.FirstName)"
     $safeName = $nameLastFirst -replace '\s', '_' -replace '[^\w]', ''
-    $pdfPath = Join-Path $outputFolder "$safeName.pdf"
-
+    $pdfPath = Join-Path $OutputFolder "$safeName.pdf"
+    
     if (Test-Path $pdfPath) {
-        $subject = "See You at SQL Saturday Baton Rouge 2025!"
-        $body = @"
-$(if ($showBanner) { $bannerHtml } else { "" })
+        $validAttendees += [PSCustomObject]@{
+            Attendee = $a
+            SafeName = $safeName
+            PdfPath = $pdfPath
+            NameLastFirst = $nameLastFirst
+        }
+    } else {
+        $missingPdfs += $nameLastFirst
+    }
+}
+
+Write-Host "✅ Valid PDFs found: $($validAttendees.Count)" -ForegroundColor Green
+if ($missingPdfs.Count -gt 0) {
+    Write-Host "⚠️  Missing PDFs: $($missingPdfs.Count)" -ForegroundColor Yellow
+}
+
+if ($WhatIfPreference) {
+    Write-Host "`n📋 PREVIEW - Emails that would be sent:" -ForegroundColor Cyan
+    $validAttendees | ForEach-Object { 
+        Write-Host "  📧 $($_.Attendee.Email) ← $($_.SafeName).pdf" -ForegroundColor White
+    }
+    
+    if ($missingPdfs.Count -gt 0) {
+        Write-Host "`n⚠️  PREVIEW - Attendees that would be skipped (missing PDFs):" -ForegroundColor Yellow
+        $missingPdfs | ForEach-Object { Write-Host "  ❌ $_" -ForegroundColor Red }
+    }
+    
+    Write-Host "`n📊 SUMMARY:" -ForegroundColor Cyan
+    Write-Host "  📧 Emails to send: $($validAttendees.Count)" -ForegroundColor White
+    Write-Host "  ⚠️  Skipped (no PDF): $($missingPdfs.Count)" -ForegroundColor White
+    Write-Host "  📂 Output folder: $OutputFolder" -ForegroundColor Gray
+    Write-Host "`nTo actually send emails, run without -WhatIf parameter" -ForegroundColor Yellow
+    return
+}
+
+# SEND EMAILS
+if ($validAttendees.Count -gt 0) {
+    Write-Host "`n📧 Starting email send process..." -ForegroundColor Green
+    Write-Host "📦 Processing in batches of $BatchSize" -ForegroundColor Gray
+    
+    $successCount = 0
+    $errorCount = 0
+    $skippedCount = $missingPdfs.Count
+    $errorLog = @()
+    $emailedBarcodes = @()
+    
+    # Function to mark attendee as emailed in database
+    function Set-AttendeeAsEmailed {
+        param($Barcode, $ConnectionString)
+        try {
+            $markConn = New-Object System.Data.SqlClient.SqlConnection $ConnectionString
+            $markCmd = $markConn.CreateCommand()
+            $markCmd.CommandText = $markEmailedProc
+            $markCmd.CommandType = [System.Data.CommandType]::StoredProcedure
+            $markCmd.Parameters.Add((New-Object Data.SqlClient.SqlParameter("@Barcode", $Barcode))) | Out-Null
+            $markConn.Open()
+            $markCmd.ExecuteScalar() | Out-Null
+            $markConn.Close()
+            return $true
+        } catch {
+            Write-Host "  ⚠️  Database logging failed for $Barcode : $_" -ForegroundColor Yellow
+            return $false
+        }
+    }
+    
+    # Function to batch mark attendees as emailed
+    function Set-BatchAttendeesAsEmailed {
+        param($BarcodeList, $ConnectionString)
+        if ($BarcodeList.Count -eq 0) { return }
+        
+        try {
+            $barcodeString = $BarcodeList -join ','
+            $batchConn = New-Object System.Data.SqlClient.SqlConnection $ConnectionString
+            $batchCmd = $batchConn.CreateCommand()
+            $batchCmd.CommandText = $markBatchEmailedProc
+            $batchCmd.CommandType = [System.Data.CommandType]::StoredProcedure
+            $batchCmd.Parameters.Add((New-Object Data.SqlClient.SqlParameter("@BarcodeList", $barcodeString))) | Out-Null
+            $batchConn.Open()
+            $reader = $batchCmd.ExecuteReader()
+            if ($reader.Read()) {
+                $message = $reader["Message"]
+                Write-Host "  📝 Batch update: $message" -ForegroundColor Gray
+            }
+            $batchConn.Close()
+        } catch {
+            Write-Host "  ⚠️  Batch database logging failed: $_" -ForegroundColor Yellow
+        }
+    }
+    
+    # Process in batches to avoid overwhelming the SMTP server
+    for ($i = 0; $i -lt $validAttendees.Count; $i += $BatchSize) {
+        $batch = $validAttendees[$i..([Math]::Min($i + $BatchSize - 1, $validAttendees.Count - 1))]
+        $batchNumber = [Math]::Floor($i / $BatchSize) + 1
+        $totalBatches = [Math]::Ceiling($validAttendees.Count / $BatchSize)
+        $batchEmailedBarcodes = @()
+        
+        Write-Host "`n📦 Processing batch $batchNumber of $totalBatches ($($batch.Count) emails)..." -ForegroundColor Cyan
+        
+        foreach ($item in $batch) {
+            $a = $item.Attendee
+            $subject = "See You at SQL Saturday Baton Rouge 2025!"
+            $body = @"
+$(if ($ShowBanner) { $bannerHtml } else { "" })
 
 <p>Hi $($a.FirstName),</p>
 
@@ -70,27 +265,59 @@ Sign up to volunteer here:<br>
 <p>Best regards,<br>
 The SQL Saturday Baton Rouge Team</p>
 "@
-        try {
-            Send-MailMessage -To $a.Email -From $from -Subject $subject -Body $body `
-                -SmtpServer $smtp -Port $port -UseSsl -Credential $cred -Attachments $pdfPath -BodyAsHtml -WarningAction SilentlyContinue
-            Write-Host "✅ Sent: $safeName.pdf ➝ $($a.Email)"
-            # Log successful send to AttendeesPrinted table using Barcode
-            $insertConn = New-Object System.Data.SqlClient.SqlConnection $connectionString
-            $insertCmd = $insertConn.CreateCommand()
-            $insertCmd.CommandText = "INSERT INTO dbo.AttendeesPrinted (Barcode) VALUES (@Barcode)"
-            $insertCmd.Parameters.Add((New-Object Data.SqlClient.SqlParameter("@Barcode", $a.Barcode))) | Out-Null
-            $insertConn.Open()
-            $insertCmd.ExecuteNonQuery() | Out-Null
-            Write-Host "✅ Logged print for $($a.Barcode)"
-            $insertConn.Close()
-            Start-Sleep -Seconds 2
-        } catch {
-            Write-Host "❌ Error sending to $($a.Email): $_"
-            Add-Content -Path "$outputFolder\send_errors.txt" -Value "$($a.Email): $_"
+            try {
+                Send-MailMessage -To $a.Email -From $from -Subject $subject -Body $body `
+                    -SmtpServer $smtp -Port $port -UseSsl -Credential $cred -Attachments $item.PdfPath -BodyAsHtml -WarningAction SilentlyContinue
+                
+                Write-Host "✅ Sent: $($item.SafeName).pdf ➝ $($a.Email)" -ForegroundColor Green
+                
+                # Add to batch for database logging
+                $batchEmailedBarcodes += $a.Barcode
+                $emailedBarcodes += $a.Barcode
+                $successCount++
+                
+            } catch {
+                $errorMessage = "Error sending to $($a.Email): $_"
+                Write-Host "❌ $errorMessage" -ForegroundColor Red
+                $errorLog += $errorMessage
+                $errorCount++
+            }
+            
+            # Delay between emails to be nice to the SMTP server
+            if ($DelaySeconds -gt 0) {
+                Start-Sleep -Seconds $DelaySeconds
+            }
+        }
+        
+        # Update database for successful emails in this batch
+        if ($batchEmailedBarcodes.Count -gt 0) {
+            Set-BatchAttendeesAsEmailed -BarcodeList $batchEmailedBarcodes -ConnectionString $ConnectionString
+        }
+        
+        # Longer delay between batches
+        if ($i + $BatchSize -lt $validAttendees.Count) {
+            Write-Host "⏳ Waiting before next batch..." -ForegroundColor Gray
+            Start-Sleep -Seconds ($DelaySeconds * 2)
         }
     }
-    else {
-        Write-Host "⚠️ Skipped: No PDF found for $nameLastFirst"
-        Add-Content -Path "$outputFolder\skipped.txt" -Value $nameLastFirst
+    
+    # Final summary
+    Write-Host "`n📊 FINAL SUMMARY:" -ForegroundColor Cyan
+    Write-Host "✅ Successfully sent: $successCount emails" -ForegroundColor Green
+    Write-Host "📝 Database records updated: $($emailedBarcodes.Count)" -ForegroundColor Green
+    Write-Host "❌ Failed to send: $errorCount emails" -ForegroundColor Red
+    Write-Host "⚠️  Skipped (no PDF): $skippedCount attendees" -ForegroundColor Yellow
+    
+    # Write error log and skipped list to files
+    if ($errorLog.Count -gt 0) {
+        $errorLogPath = Join-Path $OutputFolder "send_errors.txt"
+        $errorLog | Out-File -FilePath $errorLogPath -Encoding UTF8
+        Write-Host "📄 Error log written to: $errorLogPath" -ForegroundColor Gray
+    }
+    
+    if ($missingPdfs.Count -gt 0) {
+        $skippedLogPath = Join-Path $OutputFolder "skipped.txt"
+        $missingPdfs | Out-File -FilePath $skippedLogPath -Encoding UTF8
+        Write-Host "📄 Skipped list written to: $skippedLogPath" -ForegroundColor Gray
     }
 }
