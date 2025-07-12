@@ -1,3 +1,7 @@
+# -requires -module Microsoft.PowerShell.SecretManagement
+# -requires -module Microsoft.PowerShell.SecretStore
+
+
 # CONFIGURATION
 #Get Eventbrite API token from https://www.eventbrite.com/platform/api-keys
 $token = Get-Secret -Name EventbriteToken
