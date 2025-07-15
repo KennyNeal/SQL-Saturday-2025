@@ -28,6 +28,9 @@ Delay in seconds between each email. Defaults to 2 seconds.
 .PARAMETER BatchSize
 Number of emails to process in each batch. Defaults to 50.
 
+.PARAMETER EmailType
+Type of email to send: 'attendee' or 'volunteer'. Defaults to 'attendee'.
+
 .EXAMPLE
 .\Mailing.ps1 -WhatIf
 Preview what emails would be sent without sending them.
@@ -52,18 +55,65 @@ param(
     [string]$OutputFolder = "C:\Users\kneal\OneDrive\Documents\SQL Saturday 2025\SpeedPass",
     [string]$CredPath = "C:\Users\kneal\gmail-cred.xml",
     [int]$DelaySeconds = 2,
-    [int]$BatchSize = 50
+    [int]$BatchSize = 50,
+    [ValidateSet("attendee", "volunteer")][string]$EmailType = "attendee",
+    [string]$TestEmail = ""
 )
 
 # CONFIGURATION
-$getAttendeesQuery = "EXEC dbo.AttendeesGetForEmail"
 $markEmailedProc = "dbo.AttendeesMarkAsEmailed"
 $markBatchEmailedProc = "dbo.AttendeesMarkBatchAsEmailed"
-$smtp = "smtp.gmail.com"
-$port = 587
-
-# Email banner configuration
 $bannerHtml = "<p style='color: red; font-weight: bold;'>There was an issue with our first batch of emails. We're sorry if you have received this twice.</p>"
+
+switch ($EmailType) {
+    "attendee" {
+        $getAttendeesQuery = "EXEC dbo.AttendeesGetForEmail"
+        $subject = "See You at SQL Saturday Baton Rouge 2025!"
+        $bodyTemplate = @"
+$(if ($ShowBanner) { $bannerHtml } else { "" })
+<p>Hi {{FirstName}},</p>
+<p>Your personalized SpeedPass for SQL Saturday Baton Rouge 2025 is attached!</p>
+<p><b>Please print your SpeedPass and bring it with you to the event.</b> This will help us check you in quickly and get you to the sessions and raffle tickets faster.</p>
+<p>We still have seats available for both of our pre-conference sessions:</p>
+<ul>
+  <li>
+    <b>Jumpstart Your Power BI Skills: A Hands on Workshop</b><br>
+    <a href='https://www.sqlsatbr.com/precons#h.nlb272c3ff5i'>Register here</a>
+  </li>
+  <li>
+    <b>Become immediately effective with PowerShell</b><br>
+    <a href='https://www.sqlsatbr.com/precons#h.dg9pejggrn5z'>Register here</a>
+  </li>
+</ul>
+<p>Interested in helping out?<br>
+Sign up to volunteer here:<br>
+<a href='https://www.signupgenius.com/go/4090C49AFAA2EA2FF2-57005830-sqlsaturday#/'>https://www.signupgenius.com/go/4090C49AFAA2EA2FF2-57005830-sqlsaturday#/</a>
+</p>
+<p>Please help us spread the word! Share our event on social media and invite your friends and colleagues.</p>
+<p>We look forward to seeing you soon!</p>
+<p>Best regards,<br>
+The SQL Saturday Baton Rouge Team</p>
+"@
+    }
+    "volunteer" {
+        $getAttendeesQuery = @"
+SELECT DISTINCT First_Name, Last_Name, Email
+FROM SQLSaturday..Attendees
+WHERE Are_you_willing_to_volunteer_during_the_event = 'Yes'
+"@
+        $subject = "Volunteer for SQL Saturday Baton Rouge 2025!"
+        $bodyTemplate = @"
+<p>Hi {{FirstName}},</p>
+<p>Thank you for offering to volunteer at SQL Saturday Baton Rouge 2025!</p>
+<p>Please sign up for a volunteer slot here:<br>
+<a href='https://www.signupgenius.com/go/4090C49AFAA2EA2FF2-57005830-sqlsaturday#/'>Volunteer Signup</a>
+</p>
+<p>We appreciate your help and look forward to seeing you at the event!</p>
+<p>Best regards,<br>
+The SQL Saturday Baton Rouge Team</p>
+"@
+    }
+}
 
 # Validate paths and credentials
 if (-not (Test-Path $CredPath)) {
@@ -84,6 +134,7 @@ if ($WhatIfPreference) {
 Write-Host "📁 Output Folder: $OutputFolder" -ForegroundColor Gray
 Write-Host "📧 From: $from" -ForegroundColor Gray
 Write-Host "🎛️  Banner Enabled: $ShowBanner" -ForegroundColor Gray
+Write-Host "📬 Email Type: $EmailType" -ForegroundColor Gray
 
 # FETCH ATTENDEE EMAILS
 Write-Host "`n📊 Fetching attendees from database..." -ForegroundColor Green
@@ -97,19 +148,17 @@ try {
     $attendees = @()
     while ($reader.Read()) {
         $attendees += [PSCustomObject]@{
-            Barcode   = $reader["Barcode"]
             FirstName = $reader["First_Name"]
             LastName  = $reader["Last_Name"]
             Email     = $reader["Email"]
-            OrderDate = if ($reader["Order_Date"] -ne [DBNull]::Value) { $reader["Order_Date"] } else { $null }
-            JobTitle  = if ($reader["Job_Title"] -ne [DBNull]::Value) { $reader["Job_Title"] } else { "" }
-            Company   = if ($reader["Company"] -ne [DBNull]::Value) { $reader["Company"] } else { "" }
+            Barcode   = if ($reader["Barcode"] -ne $null) { $reader["Barcode"] } else { $null }
+            OrderDate = if ($reader.PSObject.Properties.Match("Order_Date").Count -gt 0 -and $reader["Order_Date"] -ne [DBNull]::Value) { $reader["Order_Date"] } else { $null }
+            JobTitle  = if ($reader.PSObject.Properties.Match("Job_Title").Count -gt 0 -and $reader["Job_Title"] -ne [DBNull]::Value) { $reader["Job_Title"] } else { "" }
+            Company   = if ($reader.PSObject.Properties.Match("Company").Count -gt 0 -and $reader["Company"] -ne [DBNull]::Value) { $reader["Company"] } else { "" }
         }
     }
     $connection.Close()
-    
     Write-Host "✅ Found $($attendees.Count) attendees to process" -ForegroundColor Green
-    
     if ($attendees.Count -eq 0) {
         Write-Host "ℹ️  No attendees found. Exiting." -ForegroundColor Yellow
         return
@@ -117,6 +166,12 @@ try {
 } catch {
     Write-Error "❌ Database error: $_"
     return
+}
+
+# After fetching attendees, filter for test mode
+if ($TestEmail -and $TestEmail -ne "") {
+    $attendees = $attendees | Where-Object { $_.Email -eq $TestEmail }
+    Write-Host "✉️  TEST MODE: Only sending to $TestEmail" -ForegroundColor Yellow
 }
 
 # Validate PDF files and create processing summary
@@ -220,6 +275,9 @@ if ($validAttendees.Count -gt 0) {
         }
     }
     
+    $smtp = "smtp.gmail.com"
+    $port = 587
+    
     # Process in batches to avoid overwhelming the SMTP server
     for ($i = 0; $i -lt $validAttendees.Count; $i += $BatchSize) {
         $batch = $validAttendees[$i..([Math]::Min($i + $BatchSize - 1, $validAttendees.Count - 1))]
@@ -231,43 +289,22 @@ if ($validAttendees.Count -gt 0) {
         
         foreach ($item in $batch) {
             $a = $item.Attendee
-            $subject = "See You at SQL Saturday Baton Rouge 2025!"
-            $body = @"
-$(if ($ShowBanner) { $bannerHtml } else { "" })
-
-<p>Hi $($a.FirstName),</p>
-
-<p>Your personalized SpeedPass for SQL Saturday Baton Rouge 2025 is attached!</p>
-
-<p><b>Please print your SpeedPass and bring it with you to the event.</b> This will help us check you in quickly and get you to the sessions and raffle tickets faster.</p>
-
-<p>We still have seats available for both of our pre-conference sessions:</p>
-<ul>
-  <li>
-    <b>Jumpstart Your Power BI Skills: A Hands on Workshop</b><br>
-    <a href='https://www.sqlsatbr.com/precons#h.nlb272c3ff5i'>Register here</a>
-  </li>
-  <li>
-    <b>Become immediately effective with PowerShell</b><br>
-    <a href='https://www.sqlsatbr.com/precons#h.dg9pejggrn5z'>Register here</a>
-  </li>
-</ul>
-
-<p>Interested in helping out?<br>
-Sign up to volunteer here:<br>
-<a href='https://www.signupgenius.com/go/4090C49AFAA2EA2FF2-57005830-sqlsaturday#/'>https://www.signupgenius.com/go/4090C49AFAA2EA2FF2-57005830-sqlsaturday#/</a>
-</p>
-
-<p>Please help us spread the word! Share our event on social media and invite your friends and colleagues.</p>
-
-<p>We look forward to seeing you soon!</p>
-
-<p>Best regards,<br>
-The SQL Saturday Baton Rouge Team</p>
-"@
+            $body = $bodyTemplate -replace '{{FirstName}}', $a.FirstName
+            
             try {
-                Send-MailMessage -To $a.Email -From $from -Subject $subject -Body $body `
-                    -SmtpServer $smtp -Port $port -UseSsl -Credential $cred -Attachments $item.PdfPath -BodyAsHtml -WarningAction SilentlyContinue
+                if ($EmailType -eq "attendee") {
+                    $subject = "See You at SQL Saturday Baton Rouge 2025!"
+                    $body = $bodyTemplate -replace '{{FirstName}}', $a.FirstName
+                    
+                    Send-MailMessage -To $a.Email -From $from -Subject $subject -Body $body `
+                        -SmtpServer $smtp -Port $port -UseSsl -Credential $cred -Attachments $item.PdfPath -BodyAsHtml -WarningAction SilentlyContinue
+                } elseif ($EmailType -eq "volunteer") {
+                    $subject = "Volunteer for SQL Saturday Baton Rouge 2025!"
+                    $body = $bodyTemplate -replace '{{FirstName}}', $a.FirstName
+                    
+                    Send-MailMessage -To $a.Email -From $from -Subject $subject -Body $body `
+                        -SmtpServer $smtp -Port $port -UseSsl -Credential $cred -BodyAsHtml -WarningAction SilentlyContinue
+                }
                 
                 Write-Host "✅ Sent: $($item.SafeName).pdf ➝ $($a.Email)" -ForegroundColor Green
                 
@@ -290,7 +327,7 @@ The SQL Saturday Baton Rouge Team</p>
         }
         
         # Update database for successful emails in this batch
-        if ($batchEmailedBarcodes.Count -gt 0) {
+        if ($batchEmailedBarcodes.Count -gt 0 -and $EmailType -eq "attendee") {
             Set-BatchAttendeesAsEmailed -BarcodeList $batchEmailedBarcodes -ConnectionString $ConnectionString
         }
         
