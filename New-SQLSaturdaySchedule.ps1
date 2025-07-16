@@ -45,18 +45,6 @@ Website URL for the event.
 .PARAMETER RoomPrefix
 Prefix to remove from room names (e.g., "BEC ").
 
-.PARAMETER TimeSlots
-Array of time slots in HH:mm:ss format.
-
-.PARAMETER KeynoteTime
-Time slot for keynote presentation (HH:mm:ss format).
-
-.PARAMETER LunchTime
-Time slot for lunch (HH:mm:ss format).
-
-.PARAMETER RaffleTime
-Time slot for raffle/closing (HH:mm:ss format).
-
 .EXAMPLE
 .\New-SQLSaturdaySchedule.ps1 -ApiUrl "https://sessionize.com/api/v2/qta105as/view/GridSmart" -EventName "SQL Saturday City 2026" -EventDate "July 25, 2026" -EventDateFilter "2026-07-25T00:00:00" -PrimaryColor "#1B4B3A" -SecondaryColor "#7BAE7B"
 
@@ -65,6 +53,7 @@ Time slot for raffle/closing (HH:mm:ss format).
 
 .NOTES
 Designed for SQL Saturday events but can be adapted for other conferences.
+Time slots, keynotes, lunch, and raffle times are automatically detected from the schedule data.
 #>
 
 [CmdletBinding()]
@@ -83,12 +72,91 @@ param(
     [string]$LogoPath = "Images/SQL_2025.png",
     [string]$LocationName = "LSU Business Education Complex",
     [string]$Website = "www.sqlsatbr.com",
-    [string]$RoomPrefix = "BEC ",
-    [string[]]$TimeSlots = @("08:30:00", "09:40:00", "10:45:00", "11:20:00", "12:20:00", "13:40:00", "14:45:00", "15:45:00"),
-    [string]$KeynoteTime = "10:45:00",
-    [string]$LunchTime = "12:20:00",
-    [string]$RaffleTime = "15:45:00"
+    [string]$RoomPrefix = "BEC "
 )
+
+# Function to automatically detect time slots from schedule data
+function Get-TimeSlots {
+    param($dayData)
+    
+    # Get time slots based on sessions that have multiple concurrent rooms or are plenum sessions
+    $mainTimeSlots = @()
+    
+    foreach ($slot in $dayData.timeSlots) {
+        $regularSessions = $slot.rooms | Where-Object { 
+            $_.session -and 
+            -not $_.session.isServiceSession 
+        }
+        
+        $plenumSessions = $slot.rooms | Where-Object { $_.session.isPlenumSession -eq $true }
+        
+        # Skip 8:00 AM slot (pre-event workshops/registration)
+        if ($slot.slotStart -eq "08:00:00") {
+            continue
+        }
+        
+        # Include this time slot if:
+        # 1. It has plenum sessions (keynote, lunch, raffle), OR
+        # 2. It has multiple regular sessions (3+ concurrent sessions indicates a main time block)
+        if ($plenumSessions.Count -gt 0 -or $regularSessions.Count -ge 3) {
+            $mainTimeSlots += $slot.slotStart
+        }
+    }
+    
+    # Remove duplicates and sort
+    $timeSlots = $mainTimeSlots | 
+        Select-Object -Unique | 
+        Sort-Object { [DateTime]::ParseExact($_, "HH:mm:ss", $null) }
+    
+    Write-Host "📅 Detected time slots: $($timeSlots -join ', ')" -ForegroundColor Yellow
+    Write-Host "💡 Lightning talk sessions will be grouped within these main time blocks" -ForegroundColor Cyan
+    return $timeSlots
+}
+
+# Function to detect special events (keynote, lunch, raffle) from plenum sessions
+function Get-SpecialEvents {
+    param($dayData)
+    
+    $specialEvents = @{
+        KeynoteTime = $null
+        LunchTime = $null
+        RaffleTime = $null
+    }
+    
+    foreach ($slot in $dayData.timeSlots) {
+        $plenumSessions = $slot.rooms | Where-Object { $_.session.isPlenumSession -eq $true }
+        
+        foreach ($plenumSession in $plenumSessions) {
+            if ($plenumSession.session) {
+                $title = $plenumSession.session.title
+                $time = $slot.slotStart
+                
+                # Detect lunch first (most specific)
+                if ($title -match "lunch|break|meal" -and !$specialEvents.LunchTime) {
+                    $specialEvents.LunchTime = $time
+                    Write-Host "🍽️ Detected lunch at $time`: $title" -ForegroundColor Green
+                }
+                # Detect raffle/closing
+                elseif ($title -match "raffle|closing|prize|giveaway" -and !$specialEvents.RaffleTime) {
+                    $specialEvents.RaffleTime = $time
+                    Write-Host "� Detected raffle/closing at $time`: $title" -ForegroundColor Green
+                }
+                # Detect keynote (exclude registration/check-in)
+                elseif ($title -match "keynote" -and $title -notmatch "registration|check.?in|sign.?in" -and !$specialEvents.KeynoteTime) {
+                    $specialEvents.KeynoteTime = $time
+                    Write-Host "� Detected keynote at $time`: $title" -ForegroundColor Green
+                }
+                # Also look for opening sessions that aren't registration
+                elseif ($title -match "opening|welcome" -and $title -notmatch "registration|check.?in|sign.?in" -and !$specialEvents.KeynoteTime) {
+                    $specialEvents.KeynoteTime = $time
+                    Write-Host "� Detected opening session at $time`: $title" -ForegroundColor Green
+                }
+            }
+        }
+    }
+    
+    return $specialEvents
+}
 
 # Function to create time slot grid for specific rooms
 function New-TimeSlotGrid {
@@ -97,9 +165,7 @@ function New-TimeSlotGrid {
         $dayTitle, 
         $roomsToInclude,
         $timeSlots,
-        $keynoteTime,
-        $lunchTime,
-        $raffleTime,
+        $specialEvents,
         $roomPrefix
     )
     
@@ -126,47 +192,56 @@ function New-TimeSlotGrid {
     foreach ($timeSlot in $timeSlots) {
         $time = ([DateTime]::ParseExact($timeSlot, "HH:mm:ss", $null)).ToString("h:mm tt")
         
-        # Special handling for keynote
-        if ($timeSlot -eq $keynoteTime) {
-            $html += "<tr class='keynote-row'>`n<td class='time-cell'>$time</td>`n"
-            # Find keynote session in the data
-            $keynoteSlot = $dayData.timeSlots | Where-Object { $_.slotStart -eq $keynoteTime } | Select-Object -First 1
-            if ($keynoteSlot) {
-                $keynoteSession = ($keynoteSlot.rooms | Where-Object { $_.session.isPlenumSession }).session
-                if ($keynoteSession) {
-                    $keynoteRoom = ($keynoteSlot.rooms | Where-Object { $_.session.isPlenumSession })
-                    $roomName = if ($keynoteRoom) { $keynoteRoom.name -replace $roomPrefix, "" } else { "Auditorium" }
-                    $colspan = $roomsToInclude.Count
-                    $html += "<td class='keynote-cell' colspan='$colspan'>"
-                    $html += "<div class='keynote-title'>🎤 KEYNOTE: $($keynoteSession.title)</div>`n"
-                    $html += "<div class='keynote-speaker'>$($keynoteSession.speakers[0].name)</div>`n"
-                    $html += "<div class='keynote-room'>📍 $roomName</div>`n"
-                    $html += "</td>`n"
+        # Check if this is a special event time
+        $isSpecialEvent = $false
+        $specialEventType = ""
+        $specialEventTitle = ""
+        $specialEventLocation = ""
+        
+        # Find plenum sessions for this time slot
+        $currentSlot = $dayData.timeSlots | Where-Object { $_.slotStart -eq $timeSlot }
+        if ($currentSlot) {
+            $plenumSession = $currentSlot.rooms | Where-Object { $_.session.isPlenumSession -eq $true } | Select-Object -First 1
+            if ($plenumSession -and $plenumSession.session) {
+                $title = $plenumSession.session.title
+                $location = $plenumSession.name -replace $roomPrefix, ""
+                
+                # Determine event type based on title
+                if ($title -match "keynote|opening|welcome") {
+                    $specialEventType = "keynote"
+                    $specialEventTitle = "🎤 $title"
+                    $isSpecialEvent = $true
+                }
+                elseif ($title -match "lunch|break|meal") {
+                    $specialEventType = "lunch"
+                    $specialEventTitle = "🍽️ LUNCH"
+                    if ($title -match "jambalaya") { $specialEventTitle = "🍲 JAMBALAYA LUNCH" }
+                    $isSpecialEvent = $true
+                }
+                elseif ($title -match "raffle|closing|prize|giveaway") {
+                    $specialEventType = "raffle"
+                    $specialEventTitle = "🎁 RAFFLE & CLOSING"
+                    $isSpecialEvent = $true
+                }
+                
+                $specialEventLocation = $location
+                
+                # Add speaker info for keynotes
+                if ($specialEventType -eq "keynote" -and $plenumSession.session.speakers -and $plenumSession.session.speakers.Count -gt 0) {
+                    $specialEventTitle += "`n" + $plenumSession.session.speakers[0].name
                 }
             }
-            $html += "</tr>`n"
-            continue
         }
         
-        # Special handling for lunch
-        if ($timeSlot -eq $lunchTime) {
-            $html += "<tr class='lunch-row'>`n<td class='time-cell'>$time</td>`n"
+        # Handle special events
+        if ($isSpecialEvent) {
+            $html += "<tr class='$specialEventType-row'>`n<td class='time-cell'>$time</td>`n"
             $colspan = $roomsToInclude.Count
-            $html += "<td class='lunch-cell' colspan='$colspan'>"
-            $html += "<div class='lunch-title'>LUNCH</div>`n"
-            $html += "<div class='lunch-room'>📍 Atrium</div>`n"
-            $html += "</td>`n"
-            $html += "</tr>`n"
-            continue
-        }
-        
-        # Special handling for raffle
-        if ($timeSlot -eq $raffleTime) {
-            $html += "<tr class='raffle-row'>`n<td class='time-cell'>$time</td>`n"
-            $colspan = $roomsToInclude.Count
-            $html += "<td class='raffle-cell' colspan='$colspan'>"
-            $html += "<div class='raffle-title'>🎁 RAFFLE & CLOSING</div>`n"
-            $html += "<div class='raffle-room'>📍 Auditorium</div>`n"
+            $html += "<td class='$specialEventType-cell' colspan='$colspan'>"
+            $html += "<div class='$specialEventType-title'>$specialEventTitle</div>`n"
+            if ($specialEventLocation) {
+                $html += "<div class='$specialEventType-room'>📍 $specialEventLocation</div>`n"
+            }
             $html += "</td>`n"
             $html += "</tr>`n"
             continue
@@ -543,6 +618,18 @@ Write-Host "🔄 Processing schedule data..." -ForegroundColor Green
 # Get only the main event day using the filter
 $mainDay = $response | Where-Object { $_.date -eq $EventDateFilter }
 
+if (-not $mainDay) {
+    Write-Error "❌ No schedule data found for date: $EventDateFilter"
+    return
+}
+
+# Automatically detect time slots and special events
+Write-Host "🔍 Analyzing schedule structure..." -ForegroundColor Cyan
+$timeSlots = Get-TimeSlots -dayData $mainDay
+$specialEvents = Get-SpecialEvents -dayData $mainDay
+
+Write-Host "✅ Schedule analysis complete!" -ForegroundColor Green
+
 # Generate CSS with custom colors and page size
 $css = New-ScheduleCSS -PageSize $PageSize -Orientation $Orientation -PrimaryColor $PrimaryColor -SecondaryColor $SecondaryColor
 
@@ -590,11 +677,11 @@ if ($mainDay) {
     $page2Rooms = $allRooms[$midPoint..($totalRooms-1)]
     
     Write-Host "📅 Processing Page 1 Rooms: $($page1Rooms.name -join ', ')..." -ForegroundColor Yellow
-    $page1Html = New-TimeSlotGrid -dayData $mainDay -dayTitle "" -roomsToInclude $page1Rooms -timeSlots $TimeSlots -keynoteTime $KeynoteTime -lunchTime $LunchTime -raffleTime $RaffleTime -roomPrefix $RoomPrefix
+    $page1Html = New-TimeSlotGrid -dayData $mainDay -dayTitle "" -roomsToInclude $page1Rooms -timeSlots $timeSlots -specialEvents $specialEvents -roomPrefix $RoomPrefix
     $htmlContent += $page1Html
     
     Write-Host "📅 Processing Page 2 Rooms: $($page2Rooms.name -join ', ')..." -ForegroundColor Yellow
-    $page2Html = New-TimeSlotGrid -dayData $mainDay -dayTitle "" -roomsToInclude $page2Rooms -timeSlots $TimeSlots -keynoteTime $KeynoteTime -lunchTime $LunchTime -raffleTime $RaffleTime -roomPrefix $RoomPrefix
+    $page2Html = New-TimeSlotGrid -dayData $mainDay -dayTitle "" -roomsToInclude $page2Rooms -timeSlots $timeSlots -specialEvents $specialEvents -roomPrefix $RoomPrefix
     $htmlContent += $page2Html
 }
 
@@ -643,3 +730,4 @@ Write-Host "   -EventDate '[FULLDATE]'" -ForegroundColor Yellow
 Write-Host "   -EventDateFilter '[YYYY-MM-DDTHH:mm:ss]'" -ForegroundColor Yellow
 Write-Host "   -LogoPath 'Images/[NEWLOGO].png'" -ForegroundColor Yellow
 Write-Host "   -PrimaryColor '#[HEXCOLOR]' -SecondaryColor '#[HEXCOLOR]'" -ForegroundColor Yellow
+Write-Host "`n🤖 Time slots and special events are automatically detected from Sessionize data!" -ForegroundColor Magenta
