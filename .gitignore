@@ -29,3 +29,5 @@ obj/
 
 # Ignore NuGet packages
 *.nupkg
+Auto_Schedule_Test.html
+Test_Schedule.html

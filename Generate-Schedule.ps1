@@ -1,20 +1,10 @@
 <#
 .SYNOPSIS
-Generates a printable legal-sized landsca    $html = @"
-<div class="day-section">
-"@
-
-    # Only add title if one is provided
-    if ($dayTitle) {
-        $html += "<h2 class='day-title'>$dayTitle</h2>`n"
-    }
-    
-    $html += @"
-    <table class="schedule-table">"@chedule document from Sessionize API data.
+Generates a printable letter-sized landscape schedule document from Sessionize API data.
 
 .DESCRIPTION
 This script fetches session data from the Sessionize API and creates a formatted HTML document
-that can be printed front and back on legal-sized paper in landscape orientation.
+that can be printed front and back on letter-sized paper in landscape orientation.
 
 .PARAMETER ApiUrl
 The Sessionize API URL for the event schedule data.
