@@ -1,10 +1,10 @@
 <#
 .SYNOPSIS
-Generates a printable letter-sized landscape schedule document from Sessionize API data.
+Generates a printable schedule document from Sessionize API data with customizable styling.
 
 .DESCRIPTION
 This script fetches session data from the Sessionize API and creates a formatted HTML document
-that can be printed front and back on letter-sized paper in landscape orientation.
+that can be printed with customizable page size, colors, and layout options.
 
 .PARAMETER ApiUrl
 The Sessionize API URL for the event schedule data.
@@ -16,13 +16,55 @@ Path where the HTML file will be saved.
 Name of the event for the document header.
 
 .PARAMETER EventDate
-Date of the event.
+Date string for the event (e.g., "July 26, 2025").
+
+.PARAMETER EventDateFilter
+ISO date string to filter which day to process (e.g., "2025-07-26T00:00:00").
+
+.PARAMETER PageSize
+Paper size for printing. Valid values: "letter", "legal", "a4".
+
+.PARAMETER Orientation
+Page orientation. Valid values: "landscape", "portrait".
+
+.PARAMETER PrimaryColor
+Primary color for headers and borders (hex format, e.g., "#2F5233").
+
+.PARAMETER SecondaryColor
+Secondary color for table headers and accents (hex format, e.g., "#8FBC8F").
+
+.PARAMETER LogoPath
+Relative path to the logo image file.
+
+.PARAMETER LocationName
+Name of the event location.
+
+.PARAMETER Website
+Website URL for the event.
+
+.PARAMETER RoomPrefix
+Prefix to remove from room names (e.g., "BEC ").
+
+.PARAMETER TimeSlots
+Array of time slots in HH:mm:ss format.
+
+.PARAMETER KeynoteTime
+Time slot for keynote presentation (HH:mm:ss format).
+
+.PARAMETER LunchTime
+Time slot for lunch (HH:mm:ss format).
+
+.PARAMETER RaffleTime
+Time slot for raffle/closing (HH:mm:ss format).
 
 .EXAMPLE
-.\Generate-Schedule.ps1 -OutputPath "schedule.html"
+.\New-SQLSaturdaySchedule.ps1 -ApiUrl "https://sessionize.com/api/v2/qta105as/view/GridSmart" -EventName "SQL Saturday City 2026" -EventDate "July 25, 2026" -EventDateFilter "2026-07-25T00:00:00" -PrimaryColor "#1B4B3A" -SecondaryColor "#7BAE7B"
+
+.EXAMPLE
+.\New-SQLSaturdaySchedule.ps1 -PageSize "legal" -PrimaryColor "#8B0000" -SecondaryColor "#CD5C5C" -LogoPath "Images/MyLogo.png"
 
 .NOTES
-Designed for SQL Saturday Baton Rouge 2025 schedule formatting.
+Designed for SQL Saturday events but can be adapted for other conferences.
 #>
 
 [CmdletBinding()]
@@ -30,29 +72,36 @@ param(
     [string]$ApiUrl = "https://sessionize.com/api/v2/qta105as/view/GridSmart",
     [string]$OutputPath = "SQL_Saturday_Schedule.html",
     [string]$EventName = "SQL Saturday Baton Rouge 2025",
-    [string]$EventDate = "July 25-26, 2025"
+    [string]$EventDate = "Saturday, July 26, 2025",
+    [string]$EventDateFilter = "2025-07-26T00:00:00",
+    [ValidateSet("letter", "legal", "a4")]
+    [string]$PageSize = "letter",
+    [ValidateSet("landscape", "portrait")]
+    [string]$Orientation = "landscape",
+    [string]$PrimaryColor = "#2F5233",
+    [string]$SecondaryColor = "#8FBC8F",
+    [string]$LogoPath = "Images/SQL_2025.png",
+    [string]$LocationName = "LSU Business Education Complex",
+    [string]$Website = "www.sqlsatbr.com",
+    [string]$RoomPrefix = "BEC ",
+    [string[]]$TimeSlots = @("08:30:00", "09:40:00", "10:45:00", "11:20:00", "12:20:00", "13:40:00", "14:45:00", "15:45:00"),
+    [string]$KeynoteTime = "10:45:00",
+    [string]$LunchTime = "12:20:00",
+    [string]$RaffleTime = "15:45:00"
 )
-
-Write-Host "=== SQL Saturday Schedule Generator ===" -ForegroundColor Cyan
-Write-Host "📡 Fetching data from Sessionize API..." -ForegroundColor Green
-
-try {
-    # Fetch data from API
-    $response = Invoke-RestMethod -Uri $ApiUrl -Method Get
-    Write-Host "✅ Successfully fetched schedule data" -ForegroundColor Green
-} catch {
-    Write-Error "❌ Failed to fetch data from API: $_"
-    return
-}
-
-Write-Host "🔄 Processing schedule data..." -ForegroundColor Green
-
-# Get only the main event day (Saturday)
-$mainDay = $response | Where-Object { $_.date -eq "2025-07-26T00:00:00" }
 
 # Function to create time slot grid for specific rooms
 function New-TimeSlotGrid {
-    param($dayData, $dayTitle, $roomsToInclude)
+    param(
+        $dayData, 
+        $dayTitle, 
+        $roomsToInclude,
+        $timeSlots,
+        $keynoteTime,
+        $lunchTime,
+        $raffleTime,
+        $roomPrefix
+    )
     
     $html = @"
 <div class="day-section">
@@ -64,7 +113,7 @@ function New-TimeSlotGrid {
 
     # Use only the specified rooms
     foreach ($room in $roomsToInclude) {
-        $roomName = $room.name -replace "BEC ", "" -replace " \(", "`n("
+        $roomName = $room.name -replace $roomPrefix, "" -replace " \(", "`n("
         $html += "<th class='room-column'>$roomName</th>`n"
     }
     
@@ -74,22 +123,19 @@ function New-TimeSlotGrid {
         <tbody>
 "@
 
-    # Define the specific time slots for the schedule
-    $timeSlots = @("08:30:00", "09:40:00", "10:45:00", "11:20:00", "12:20:00", "13:40:00", "14:45:00", "15:45:00")
-    
     foreach ($timeSlot in $timeSlots) {
         $time = ([DateTime]::ParseExact($timeSlot, "HH:mm:ss", $null)).ToString("h:mm tt")
         
-        # Special handling for keynote at 10:45
-        if ($timeSlot -eq "10:45:00") {
+        # Special handling for keynote
+        if ($timeSlot -eq $keynoteTime) {
             $html += "<tr class='keynote-row'>`n<td class='time-cell'>$time</td>`n"
             # Find keynote session in the data
-            $keynoteSlot = $dayData.timeSlots | Where-Object { $_.slotStart -eq "10:45:00" } | Select-Object -First 1
+            $keynoteSlot = $dayData.timeSlots | Where-Object { $_.slotStart -eq $keynoteTime } | Select-Object -First 1
             if ($keynoteSlot) {
                 $keynoteSession = ($keynoteSlot.rooms | Where-Object { $_.session.isPlenumSession }).session
                 if ($keynoteSession) {
                     $keynoteRoom = ($keynoteSlot.rooms | Where-Object { $_.session.isPlenumSession })
-                    $roomName = if ($keynoteRoom) { $keynoteRoom.name -replace "BEC ", "" } else { "Auditorium" }
+                    $roomName = if ($keynoteRoom) { $keynoteRoom.name -replace $roomPrefix, "" } else { "Auditorium" }
                     $colspan = $roomsToInclude.Count
                     $html += "<td class='keynote-cell' colspan='$colspan'>"
                     $html += "<div class='keynote-title'>🎤 KEYNOTE: $($keynoteSession.title)</div>`n"
@@ -102,8 +148,8 @@ function New-TimeSlotGrid {
             continue
         }
         
-        # Special handling for lunch at 12:20
-        if ($timeSlot -eq "12:20:00") {
+        # Special handling for lunch
+        if ($timeSlot -eq $lunchTime) {
             $html += "<tr class='lunch-row'>`n<td class='time-cell'>$time</td>`n"
             $colspan = $roomsToInclude.Count
             $html += "<td class='lunch-cell' colspan='$colspan'>"
@@ -114,8 +160,8 @@ function New-TimeSlotGrid {
             continue
         }
         
-        # Special handling for raffle at 3:45
-        if ($timeSlot -eq "15:45:00") {
+        # Special handling for raffle
+        if ($timeSlot -eq $raffleTime) {
             $html += "<tr class='raffle-row'>`n<td class='time-cell'>$time</td>`n"
             $colspan = $roomsToInclude.Count
             $html += "<td class='raffle-cell' colspan='$colspan'>"
@@ -238,17 +284,22 @@ function New-TimeSlotGrid {
     return $html
 }
 
-# Generate HTML content
-$htmlContent = @"
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>$EventName - Schedule</title>
-    <style>
+# Function to generate CSS with configurable colors and page size
+function New-ScheduleCSS {
+    param(
+        [string]$PageSize,
+        [string]$Orientation,
+        [string]$PrimaryColor,
+        [string]$SecondaryColor
+    )
+    
+    # Calculate lighter versions of colors for backgrounds
+    $lightPrimaryColor = $PrimaryColor + "20"  # Add transparency
+    $lightSecondaryColor = $SecondaryColor + "20"
+    
+    return @"
         @page {
-            size: letter landscape;
+            size: $PageSize $Orientation;
             margin: 0.5in;
         }
         
@@ -263,7 +314,7 @@ $htmlContent = @"
         
         .header {
             margin-bottom: 15px;
-            border-bottom: 3px solid #2F5233;
+            border-bottom: 3px solid $PrimaryColor;
             padding-bottom: 10px;
             position: relative;
             display: flex;
@@ -286,7 +337,7 @@ $htmlContent = @"
         .header h1 {
             margin: 0;
             font-size: 20px;
-            color: #2F5233;
+            color: $PrimaryColor;
             font-weight: bold;
         }
         
@@ -303,18 +354,18 @@ $htmlContent = @"
         .schedule-table {
             width: 100%;
             border-collapse: collapse;
-            border: 2px solid #2F5233;
+            border: 2px solid $PrimaryColor;
             font-size: 9px;
         }
         
         .schedule-table th {
-            background: #8FBC8F;
+            background: $SecondaryColor;
             color: white;
             padding: 8px 4px;
             text-align: center;
             font-weight: bold;
             font-size: 9px;
-            border: 1px solid #2F5233;
+            border: 1px solid $PrimaryColor;
             line-height: 1.1;
         }
         
@@ -351,14 +402,14 @@ $htmlContent = @"
         .time-cell {
             font-weight: bold;
             text-align: center;
-            color: #2F5233;
+            color: $PrimaryColor;
             white-space: nowrap;
             font-size: 10px;
-            border-right: 2px solid #8FBC8F;
+            border-right: 2px solid $SecondaryColor;
         }
         
         .session-cell {
-            border-left: 2px solid #8FBC8F;
+            border-left: 2px solid $SecondaryColor;
         }
         
         .session-title {
@@ -376,28 +427,28 @@ $htmlContent = @"
         }
         
         .session-level {
-            color: #2F5233;
+            color: $PrimaryColor;
             font-weight: bold;
             font-size: 7px;
             margin-top: 2px;
             text-transform: uppercase;
-            background-color: #E8F5E8;
+            background-color: ${lightPrimaryColor};
             padding: 1px 4px;
             border-radius: 2px;
             display: inline-block;
-            border: 1px solid #8FBC8F;
+            border: 1px solid $SecondaryColor;
         }
         
         .session-time {
-            color: #2F5233;
+            color: $PrimaryColor;
             font-weight: bold;
             font-size: 7px;
             margin-top: 2px;
-            background: #D4EDDA;
+            background: ${lightSecondaryColor};
             padding: 1px 3px;
             border-radius: 2px;
             display: inline-block;
-            border: 1px solid #8FBC8F;
+            border: 1px solid $SecondaryColor;
         }
         
         .session-block {
@@ -412,92 +463,46 @@ $htmlContent = @"
             padding-bottom: 0;
         }
         
-        .keynote-row {
+        .keynote-row, .lunch-row, .raffle-row {
             background: #f8f9fa;
         }
         
         .keynote-row td {
-            background: #D4EDDA !important;
+            background: ${lightSecondaryColor} !important;
         }
         
-        .keynote-cell {
-            border: 2px solid #2F5233;
+        .lunch-row td {
+            background: ${lightPrimaryColor} !important;
+        }
+        
+        .raffle-row td {
+            background: ${lightSecondaryColor} !important;
+        }
+        
+        .keynote-cell, .lunch-cell, .raffle-cell {
+            border: 2px solid $PrimaryColor;
             text-align: center;
             padding: 8px;
         }
         
-        .keynote-title {
+        .keynote-title, .lunch-title, .raffle-title {
             font-weight: bold;
-            color: #2F5233;
+            color: $PrimaryColor;
             font-size: 10px;
             margin-bottom: 2px;
         }
         
         .keynote-speaker {
-            color: #155724;
+            color: $PrimaryColor;
             font-style: italic;
             font-size: 8px;
         }
         
-        .keynote-room {
-            color: #2F5233;
+        .keynote-room, .lunch-room, .raffle-room {
+            color: $PrimaryColor;
             font-weight: bold;
             font-size: 8px;
             margin-top: 2px;
-        }
-        
-        .lunch-row {
-            background: #f8f9fa;
-        }
-        
-        .lunch-row td {
-            background: #E8F5E8 !important;
-        }
-        
-        .lunch-cell {
-            border: 2px solid #2F5233;
-            text-align: center;
-            padding: 8px;
-        }
-        
-        .lunch-title {
-            font-weight: bold;
-            color: #2F5233;
-            font-size: 10px;
-            margin-bottom: 2px;
-        }
-        
-        .lunch-room {
-            color: #2F5233;
-            font-weight: bold;
-            font-size: 8px;
-        }
-        
-        .raffle-row {
-            background: #f8f9fa;
-        }
-        
-        .raffle-row td {
-            background: #CCE5CC !important;
-        }
-        
-        .raffle-cell {
-            border: 2px solid #2F5233;
-            text-align: center;
-            padding: 8px;
-        }
-        
-        .raffle-title {
-            font-weight: bold;
-            color: #2F5233;
-            font-size: 10px;
-            margin-bottom: 2px;
-        }
-        
-        .raffle-room {
-            color: #2F5233;
-            font-weight: bold;
-            font-size: 8px;
         }
         
         .empty-cell {
@@ -517,24 +522,58 @@ $htmlContent = @"
                 height: 60px;
             }
         }
+"@
+}
+
+# Main execution
+Write-Host "=== SQL Saturday Schedule Generator ===" -ForegroundColor Cyan
+Write-Host "📡 Fetching data from Sessionize API..." -ForegroundColor Green
+
+try {
+    # Fetch data from API
+    $response = Invoke-RestMethod -Uri $ApiUrl -Method Get
+    Write-Host "✅ Successfully fetched schedule data" -ForegroundColor Green
+} catch {
+    Write-Error "❌ Failed to fetch data from API: $_"
+    return
+}
+
+Write-Host "🔄 Processing schedule data..." -ForegroundColor Green
+
+# Get only the main event day using the filter
+$mainDay = $response | Where-Object { $_.date -eq $EventDateFilter }
+
+# Generate CSS with custom colors and page size
+$css = New-ScheduleCSS -PageSize $PageSize -Orientation $Orientation -PrimaryColor $PrimaryColor -SecondaryColor $SecondaryColor
+
+# Generate HTML content
+$htmlContent = @"
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>$EventName - Schedule</title>
+    <style>
+$css
     </style>
 </head>
 <body>
     <div class="header">
         <div class="header-content">
             <h1>$EventName</h1>
-            <div class="date">Saturday, July 26, 2025</div>
+            <div class="date">$EventDate</div>
             <div style="font-size: 10px; margin-top: 3px;">
-                📍 LSU Business Education Complex • 🌐 www.sqlsatbr.com
+                📍 $LocationName • 🌐 $Website
             </div>
             <div style="font-size: 8px; margin-top: 3px; color: #495057;">
                 🎫 FREE Event • 📝 Registration: 8:00 AM • 🎁 Raffle: 3:45 PM
             </div>
             <div style="font-size: 7px; margin-top: 5px; color: #666;">
-                Schedule generated $(Get-Date -Format 'MMMM dd, yyyy') • For session abstracts and speaker bios, visit <strong>www.sqlsatbr.com</strong>
+                Schedule generated $(Get-Date -Format 'MMMM dd, yyyy') • For session abstracts and speaker bios, visit <strong>$Website</strong>
             </div>
         </div>
-        <img src="Images/SQL_2025.png" alt="SQL Saturday Baton Rouge 2025 Logo" class="header-logo">
+        <img src="$LogoPath" alt="$EventName Logo" class="header-logo">
     </div>
 "@
 
@@ -551,11 +590,11 @@ if ($mainDay) {
     $page2Rooms = $allRooms[$midPoint..($totalRooms-1)]
     
     Write-Host "📅 Processing Page 1 Rooms: $($page1Rooms.name -join ', ')..." -ForegroundColor Yellow
-    $page1Html = New-TimeSlotGrid -dayData $mainDay -dayTitle "" -roomsToInclude $page1Rooms
+    $page1Html = New-TimeSlotGrid -dayData $mainDay -dayTitle "" -roomsToInclude $page1Rooms -timeSlots $TimeSlots -keynoteTime $KeynoteTime -lunchTime $LunchTime -raffleTime $RaffleTime -roomPrefix $RoomPrefix
     $htmlContent += $page1Html
     
     Write-Host "📅 Processing Page 2 Rooms: $($page2Rooms.name -join ', ')..." -ForegroundColor Yellow
-    $page2Html = New-TimeSlotGrid -dayData $mainDay -dayTitle "" -roomsToInclude $page2Rooms
+    $page2Html = New-TimeSlotGrid -dayData $mainDay -dayTitle "" -roomsToInclude $page2Rooms -timeSlots $TimeSlots -keynoteTime $KeynoteTime -lunchTime $LunchTime -raffleTime $RaffleTime -roomPrefix $RoomPrefix
     $htmlContent += $page2Html
 }
 
@@ -573,11 +612,18 @@ try {
     Write-Host "📄 File saved to: $fullPath" -ForegroundColor Gray
     Write-Host "`n📋 Print Instructions:" -ForegroundColor Cyan
     Write-Host "   1. Open the HTML file in a web browser" -ForegroundColor White
-    Write-Host "   2. Set printer to Letter size (8.5 x 11 inches)" -ForegroundColor White
-    Write-Host "   3. Set orientation to Landscape" -ForegroundColor White
+    Write-Host "   2. Set printer to $PageSize size" -ForegroundColor White
+    Write-Host "   3. Set orientation to $Orientation" -ForegroundColor White
     Write-Host "   4. Enable double-sided printing (front and back)" -ForegroundColor White
     Write-Host "   5. Page 1: First half of rooms, Page 2: Second half of rooms" -ForegroundColor White
     Write-Host "   6. Adjust margins if needed (0.5 inch recommended)" -ForegroundColor White
+    
+    # Show customization info
+    Write-Host "`n🎨 Customization Applied:" -ForegroundColor Magenta
+    Write-Host "   • Page Size: $PageSize $Orientation" -ForegroundColor White
+    Write-Host "   • Primary Color: $PrimaryColor" -ForegroundColor White
+    Write-Host "   • Secondary Color: $SecondaryColor" -ForegroundColor White
+    Write-Host "   • Logo: $LogoPath" -ForegroundColor White
     
     # Open the file if requested
     $openFile = Read-Host "`nWould you like to open the file now? (y/n)"
@@ -590,3 +636,10 @@ try {
 }
 
 Write-Host "`n🎉 Schedule generation complete!" -ForegroundColor Green
+Write-Host "`n💡 For next year, update these parameters:" -ForegroundColor Cyan
+Write-Host "   -ApiUrl 'https://sessionize.com/api/v2/[NEWEVENTID]/view/GridSmart'" -ForegroundColor Yellow
+Write-Host "   -EventName 'SQL Saturday [CITY] [YEAR]'" -ForegroundColor Yellow
+Write-Host "   -EventDate '[FULLDATE]'" -ForegroundColor Yellow
+Write-Host "   -EventDateFilter '[YYYY-MM-DDTHH:mm:ss]'" -ForegroundColor Yellow
+Write-Host "   -LogoPath 'Images/[NEWLOGO].png'" -ForegroundColor Yellow
+Write-Host "   -PrimaryColor '#[HEXCOLOR]' -SecondaryColor '#[HEXCOLOR]'" -ForegroundColor Yellow
