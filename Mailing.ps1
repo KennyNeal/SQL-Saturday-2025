@@ -151,7 +151,7 @@ try {
             FirstName = $reader["First_Name"]
             LastName  = $reader["Last_Name"]
             Email     = $reader["Email"]
-            Barcode   = if ($reader["Barcode"] -ne $null) { $reader["Barcode"] } else { $null }
+            Barcode   = if ($null -ne $reader["Barcode"]) { $reader["Barcode"] } else { $null }
             OrderDate = if ($reader.PSObject.Properties.Match("Order_Date").Count -gt 0 -and $reader["Order_Date"] -ne [DBNull]::Value) { $reader["Order_Date"] } else { $null }
             JobTitle  = if ($reader.PSObject.Properties.Match("Job_Title").Count -gt 0 -and $reader["Job_Title"] -ne [DBNull]::Value) { $reader["Job_Title"] } else { "" }
             Company   = if ($reader.PSObject.Properties.Match("Company").Count -gt 0 -and $reader["Company"] -ne [DBNull]::Value) { $reader["Company"] } else { "" }

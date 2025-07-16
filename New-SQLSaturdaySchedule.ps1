@@ -45,6 +45,9 @@ Website URL for the event.
 .PARAMETER RoomPrefix
 Prefix to remove from room names (e.g., "BEC ").
 
+.PARAMETER AppUrl
+URL for the mobile app (e.g., "https://sqlsatbr25.sessionize.com/"). If provided, a QR code will be added to the header.
+
 .EXAMPLE
 .\New-SQLSaturdaySchedule.ps1 -ApiUrl "https://sessionize.com/api/v2/qta105as/view/GridSmart" -EventName "SQL Saturday City 2026" -EventDate "July 25, 2026" -EventDateFilter "2026-07-25T00:00:00" -PrimaryColor "#1B4B3A" -SecondaryColor "#7BAE7B"
 
@@ -75,10 +78,151 @@ param(
     [string]$LogoPath,
     [string]$LocationName,
     [string]$Website,
-    [string]$RoomPrefix
+    [string]$RoomPrefix,
+    [string]$AppUrl
 )
 
-# Function to automatically detect time slots from schedule data
+# Function to generate a simple QR code using an online service
+function New-QRCodeSVG {
+    param(
+        [string]$Url,
+        [int]$Size = 80
+    )
+    
+    # Use qr-server.com API to generate QR code as SVG
+    $qrApiUrl = "https://api.qrserver.com/v1/create-qr-code/?size=${Size}x${Size}&format=svg&data=" + [System.Web.HttpUtility]::UrlEncode($Url)
+    
+    return $qrApiUrl
+}
+
+# Function to calculate optimal room distribution across pages based on content width
+function Get-OptimalRoomDistribution {
+    param(
+        $rooms,
+        [string]$pageSize,
+        [string]$roomPrefix
+    )
+    
+    # Calculate approximate available width for content based on page size (landscape)
+    $pageWidths = @{
+        "letter" = 10.0    # 11" - 1" margins = 10" available width
+        "legal" = 13.0     # 14" - 1" margins = 13" available width  
+        "a4" = 10.5        # 11.7" - 1.2" margins ≈ 10.5" available width
+    }
+    
+    $availableWidth = $pageWidths[$pageSize.ToLower()] ?? $pageWidths["letter"]
+    
+    # Reserve space for time column (approximately 0.8 inches)
+    $timeColumnWidth = 0.8
+    $contentWidth = $availableWidth - $timeColumnWidth
+    
+    Write-Host "📐 Page analysis: $pageSize size = $availableWidth inches total, $contentWidth inches for room columns" -ForegroundColor Cyan
+    
+    # Calculate estimated width for each room name (characters * average character width + padding)
+    $avgCharWidth = 0.07  # Approximate inches per character in 8pt font
+    $columnPadding = 0.3  # Padding and borders per column
+    
+    # First pass: calculate all room widths and total width needed
+    $roomWidths = @()
+    $totalWidth = 0
+    
+    foreach ($room in $rooms) {
+        # Calculate display name (after removing prefix and formatting)
+        $displayName = $room.name -replace $roomPrefix, "" -replace " \(", "`n("
+        
+        # Estimate column width needed for this room
+        # Take the longest line after line breaks for width calculation
+        $lines = $displayName -split "`n"
+        $maxLineLength = ($lines | ForEach-Object { $_.Length } | Measure-Object -Maximum).Maximum
+        $estimatedWidth = ($maxLineLength * $avgCharWidth) + $columnPadding
+        
+        # Ensure minimum width for readability
+        $columnWidth = [Math]::Max($estimatedWidth, 1.2)
+        
+        $roomWidths += @{
+            Room = $room
+            Width = $columnWidth
+            DisplayName = $displayName
+            CharLength = $maxLineLength
+        }
+        $totalWidth += $columnWidth
+        
+        Write-Host "   📏 Room '$($room.name)' → '$displayName' = $maxLineLength chars ≈ $($columnWidth.ToString('F1')) inches" -ForegroundColor Gray
+    }
+    
+    # Calculate minimum number of pages needed based on total width
+    $minPagesNeeded = [Math]::Ceiling($totalWidth / $contentWidth)
+    Write-Host "🔢 Total width needed: $($totalWidth.ToString('F1')) inches, minimum pages: $minPagesNeeded" -ForegroundColor Yellow
+    
+    # Try to distribute rooms evenly across the minimum number of pages
+    $roomPages = @()
+    
+    if ($minPagesNeeded -eq 1) {
+        # All rooms fit on one page
+        $roomPages += ,($rooms)
+        Write-Host "✅ All $($rooms.Count) rooms fit on single page" -ForegroundColor Green
+    } else {
+        # Distribute rooms as evenly as possible across pages
+        $targetRoomsPerPage = [Math]::Ceiling($rooms.Count / $minPagesNeeded)
+        Write-Host "🎯 Target: $targetRoomsPerPage rooms per page across $minPagesNeeded pages" -ForegroundColor Cyan
+        
+        # Create balanced distribution
+        for ($pageNum = 0; $pageNum -lt $minPagesNeeded; $pageNum++) {
+            $startIndex = $pageNum * $targetRoomsPerPage
+            $endIndex = [Math]::Min($startIndex + $targetRoomsPerPage - 1, $rooms.Count - 1)
+            
+            if ($startIndex -lt $rooms.Count) {
+                $pageRooms = $rooms[$startIndex..$endIndex]
+                $pageWidth = ($roomWidths[$startIndex..$endIndex] | Measure-Object -Property Width -Sum).Sum
+                
+                $roomPages += ,$pageRooms
+                Write-Host "   📄 Page $($pageNum + 1): $($pageRooms.Count) rooms, $($pageWidth.ToString('F1')) inches width" -ForegroundColor Green
+                Write-Host "      📋 Rooms: $($pageRooms.name -join ', ')" -ForegroundColor White
+            }
+        }
+        
+        # If the last page exceeds width, try to rebalance by moving one room from previous page
+        if ($roomPages.Count -ge 2) {
+            $lastPageIndex = $roomPages.Count - 1
+            $lastPageRooms = $roomPages[$lastPageIndex]
+            $lastPageWidth = 0
+            foreach ($room in $lastPageRooms) {
+                $roomWidth = ($roomWidths | Where-Object { $_.Room.id -eq $room.id }).Width
+                $lastPageWidth += $roomWidth
+            }
+            
+            if ($lastPageWidth -gt $contentWidth -and $roomPages[$lastPageIndex - 1].Count -gt 1) {
+                Write-Host "⚖️ Rebalancing: Last page too wide ($($lastPageWidth.ToString('F1')) inches), moving room from previous page" -ForegroundColor Yellow
+                
+                # Move last room from previous page to current page
+                $prevPageRooms = [System.Collections.ArrayList]::new($roomPages[$lastPageIndex - 1])
+                $roomToMove = $prevPageRooms[-1]
+                $prevPageRooms.RemoveAt($prevPageRooms.Count - 1)
+                
+                $newLastPageRooms = @($roomToMove) + $lastPageRooms
+                
+                $roomPages[$lastPageIndex - 1] = $prevPageRooms.ToArray()
+                $roomPages[$lastPageIndex] = $newLastPageRooms
+                
+                Write-Host "   🔄 Moved '$($roomToMove.name)' to last page for better balance" -ForegroundColor Magenta
+            }
+        }
+    }
+    
+    # Final summary
+    Write-Host "🎯 Final distribution: $($roomPages.Count) pages" -ForegroundColor Green
+    for ($i = 0; $i -lt $roomPages.Count; $i++) {
+        $pageRooms = $roomPages[$i]
+        $pageWidth = 0
+        foreach ($room in $pageRooms) {
+            $roomWidth = ($roomWidths | Where-Object { $_.Room.id -eq $room.id }).Width
+            $pageWidth += $roomWidth
+        }
+        Write-Host "   📄 Page $($i + 1): $($pageRooms.Count) rooms, $($pageWidth.ToString('F1')) inches" -ForegroundColor Yellow
+    }
+    
+    return $roomPages
+}
 function Get-TimeSlots {
     param($dayData)
     
@@ -93,18 +237,16 @@ function Get-TimeSlots {
         
         $plenumSessions = $slot.rooms | Where-Object { $_.session.isPlenumSession -eq $true }
         
-        # Skip 8:00 AM slot only if it looks like registration/check-in
-        if ($slot.slotStart -eq "08:00:00") {
-            # Check if this 8:00 AM slot has actual sessions vs registration
-            $hasRealSessions = $regularSessions | Where-Object { 
-                $_.session.title -notmatch "registration|check.?in|sign.?in|welcome|opening" 
-            }
-            if (-not $hasRealSessions) {
-                Write-Host "   ⏰ Skipping 8:00 AM slot - appears to be registration/check-in" -ForegroundColor Gray
-                continue
-            } else {
-                Write-Host "   ⏰ Including 8:00 AM slot - contains regular sessions" -ForegroundColor Green
-            }
+        # Skip slots that contain only registration/check-in plenum sessions
+        $hasRegistrationPlenum = $plenumSessions | Where-Object { 
+            $_.session.title -match "registration|check.?in|sign.?in|welcome|opening" 
+        }
+        
+        if ($hasRegistrationPlenum -and $regularSessions.Count -eq 0) {
+            Write-Host "   ⏰ Skipping slot at $($slot.slotStart) - appears to be registration/check-in" -ForegroundColor Gray
+            continue
+        } elseif ($hasRegistrationPlenum -and $regularSessions.Count -gt 0) {
+            Write-Host "   ⏰ Including slot at $($slot.slotStart) - contains regular sessions alongside registration" -ForegroundColor Green
         }
         
         # Include this time slot if:
@@ -134,6 +276,7 @@ function Get-SpecialEvents {
         KeynoteTime = $null
         LunchTime = $null
         RaffleTime = $null
+        RegistrationTime = $null
     }
     
     foreach ($slot in $dayData.timeSlots) {
@@ -152,17 +295,22 @@ function Get-SpecialEvents {
                 # Detect raffle/closing
                 elseif ($title -match "raffle|closing|prize|giveaway" -and !$specialEvents.RaffleTime) {
                     $specialEvents.RaffleTime = $time
-                    Write-Host "� Detected raffle/closing at $time`: $title" -ForegroundColor Green
+                    Write-Host "🎁 Detected raffle/closing at $time`: $title" -ForegroundColor Green
+                }
+                # Detect registration/check-in
+                elseif ($title -match "registration|check.?in|sign.?in" -and !$specialEvents.RegistrationTime) {
+                    $specialEvents.RegistrationTime = $time
+                    Write-Host "📝 Detected registration at $time`: $title" -ForegroundColor Green
                 }
                 # Detect keynote (exclude registration/check-in)
                 elseif ($title -match "keynote" -and $title -notmatch "registration|check.?in|sign.?in" -and !$specialEvents.KeynoteTime) {
                     $specialEvents.KeynoteTime = $time
-                    Write-Host "� Detected keynote at $time`: $title" -ForegroundColor Green
+                    Write-Host "🎤 Detected keynote at $time`: $title" -ForegroundColor Green
                 }
                 # Also look for opening sessions that aren't registration
                 elseif ($title -match "opening|welcome" -and $title -notmatch "registration|check.?in|sign.?in" -and !$specialEvents.KeynoteTime) {
                     $specialEvents.KeynoteTime = $time
-                    Write-Host "� Detected opening session at $time`: $title" -ForegroundColor Green
+                    Write-Host "🎤 Detected opening session at $time`: $title" -ForegroundColor Green
                 }
             }
         }
@@ -178,11 +326,27 @@ function New-HeaderHtml {
         [string]$EventDate,
         [string]$LocationName,
         [string]$Website,
-        [string]$LogoPath
+        [string]$LogoPath,
+        [string]$AppUrl,
+        [hashtable]$SpecialEvents
     )
     
     $headerHtml = @"
     <div class="header">
+"@
+
+    # Add QR code if AppUrl is provided
+    if ($AppUrl) {
+        $qrCodeUrl = New-QRCodeSVG -Url $AppUrl -Size 60
+        $headerHtml += @"
+        <div class="header-qr">
+            <img src="$qrCodeUrl" alt="App QR Code" class="qr-code">
+            <div class="qr-text">Use the App</div>
+        </div>
+"@
+    }
+
+    $headerHtml += @"
         <div class="header-content">
             <h1>$EventName</h1>
             <div class="date">$EventDate</div>
@@ -204,19 +368,47 @@ function New-HeaderHtml {
     $headerHtml += @"
 
             <div style="font-size: 7px; margin-top: 2px; color: #495057;">
-                🎫 FREE Event • 📝 Registration: 8:00 AM • 🎁 Raffle: 3:45 PM
-            </div>
-            <div style="font-size: 6px; margin-top: 3px; color: #666;">
-                Schedule generated $(Get-Date -Format 'MMMM dd, yyyy')
 "@
 
-    # Add website reference if provided
-    if ($Website) {
-        $headerHtml += " • For session abstracts and speaker bios, visit <strong>$Website</strong>"
+    # Build dynamic time information based on special events
+    $timeInfo = @()
+    
+    # Add registration time if available
+    if ($SpecialEvents -and $SpecialEvents.RegistrationTime) {
+        $registrationTime = ([DateTime]::ParseExact($SpecialEvents.RegistrationTime, "HH:mm:ss", $null)).ToString("h:mm tt")
+        $timeInfo += "📝 Registration: $registrationTime"
+    } elseif ($SpecialEvents -and $SpecialEvents.KeynoteTime) {
+        # If no explicit registration time, use keynote time as proxy (assuming registration is before keynote)
+        $keynoteDateTime = [DateTime]::ParseExact($SpecialEvents.KeynoteTime, "HH:mm:ss", $null)
+        $registrationDateTime = $keynoteDateTime.AddMinutes(-30)  # Assume registration 30 minutes before keynote
+        $registrationTime = $registrationDateTime.ToString("h:mm tt")
+        $timeInfo += "📝 Registration: $registrationTime"
     }
+    # No fallback - leave blank if not found
+    
+    # Add raffle time if available
+    if ($SpecialEvents -and $SpecialEvents.RaffleTime) {
+        $raffleTime = ([DateTime]::ParseExact($SpecialEvents.RaffleTime, "HH:mm:ss", $null)).ToString("h:mm tt")
+        $timeInfo += "🎁 Raffle: $raffleTime"
+    }
+    # No fallback - leave blank if not found
+    
+    # Only add the time info div if we have any time information
+    if ($timeInfo.Count -gt 0) {
+        $headerHtml += "                " + ($timeInfo -join " • ") + @"
 
+            </div>
+"@
+    } else {
+        # Close the div tag if no time info
+        $headerHtml += @"
+            </div>
+"@
+    }
+    
     $headerHtml += @"
-
+            <div style="font-size: 6px; margin-top: 3px; color: #666;">
+                Schedule generated $(Get-Date -Format 'MMMM dd, yyyy') and is subject to change • For session abstracts and speaker bios, visit www.sqlsatbr.com
             </div>
         </div>
 "@
@@ -248,6 +440,7 @@ function New-TimeSlotGrid {
         $LocationName,
         $Website,
         $LogoPath,
+        $AppUrl,
         $IncludeHeader = $false
     )
     
@@ -257,7 +450,7 @@ function New-TimeSlotGrid {
 
     # Add header only if requested (first page of each day)
     if ($IncludeHeader) {
-        $headerHtml = New-HeaderHtml -EventName $EventName -EventDate $EventDate -LocationName $LocationName -Website $Website -LogoPath $LogoPath
+        $headerHtml = New-HeaderHtml -EventName $EventName -EventDate $EventDate -LocationName $LocationName -Website $Website -LogoPath $LogoPath -AppUrl $AppUrl -SpecialEvents $specialEvents
         $html += $headerHtml
     }
 
@@ -392,21 +585,29 @@ function New-TimeSlotGrid {
                     $speakers = ($session.speakers | ForEach-Object { $_.name }) -join ", "
                     # Determine session level (exclude lightning talks and keynotes)
                     $level = ""
+                    $track = ""
                     $isLightningTalk = $title -match "Lightning Talk" -or $sessionInfo.Duration -le 15
                     $isKeynote = $session.isPlenumSession
                     
                     if (-not $isLightningTalk -and -not $isKeynote) { 
-                        if ($session.categoryItems -and $session.categoryItems.Count -gt 0) {
-                            $levelCategory = $session.categoryItems | Where-Object { $_.name -match "Level|Beginner|Intermediate|Advanced|100|200|300|400" }
-                            if ($levelCategory) { 
-                                $level = "Level: " + $levelCategory.name 
-                            } else {
-                                # If no specific level found, default to "Intermediate" for regular sessions
-                                $level = "Level: Intermediate"
+                        # Parse categories array for level and track information
+                        if ($session.categories -and $session.categories.Count -gt 0) {
+                            # Find Level category (id: 93749)
+                            $levelCategory = $session.categories | Where-Object { $_.name -eq "Level" }
+                            if ($levelCategory -and $levelCategory.categoryItems -and $levelCategory.categoryItems.Count -gt 0) {
+                                $levelValue = $levelCategory.categoryItems[0].name
+                                $level = "Level: " + $levelValue
                             }
-                        } else {
-                            # If no category items, default to "Intermediate" for regular sessions
-                            $level = "Level: Intermediate"
+                            
+                            # Find Track category (id: 93748) 
+                            $trackCategory = $session.categories | Where-Object { $_.name -eq "Track" }
+                            if ($trackCategory -and $trackCategory.categoryItems -and $trackCategory.categoryItems.Count -gt 0) {
+                                $trackValue = $trackCategory.categoryItems[0].name
+                                # Only show track if different from room name and not generic
+                                if ($trackValue -ne $room.name -and $trackValue -notmatch "Room|Track") {
+                                    $track = $trackValue
+                                }
+                            }
                         }
                     }
                     
@@ -419,9 +620,15 @@ function New-TimeSlotGrid {
                     if ($speakers) {
                         $html += "<div class='session-speaker'>$speakers</div>`n"
                     }
-                    # Always show level for regular sessions (not lightning talks or keynotes)
+                    
+                    # Show level for regular sessions (not lightning talks or keynotes)
                     if ($level) {
                         $html += "<div class='session-level'>$level</div>`n"
+                    }
+                    
+                    # Show track information if available and different from room name
+                    if ($track) {
+                        $html += "<div class='session-track'>Track: $track</div>`n"
                     }
                     
                     # Show time info for shorter sessions or multiple sessions
@@ -471,10 +678,18 @@ function New-ScheduleCSS {
     $lightPrimaryColor = $PrimaryColor + "20"  # Add transparency
     $lightSecondaryColor = $SecondaryColor + "20"
     
+    # Set margins based on page size for optimal fit
+    $pageMargin = switch ($PageSize) {
+        "letter" { "0.4in" }    # Tighter margins for letter size
+        "legal" { "0.5in" }     # Standard margins for legal
+        "a4" { "0.4in" }        # Tighter margins for A4
+        default { "0.5in" }
+    }
+    
     return @"
         @page {
             size: $PageSize $Orientation;
-            margin: 0.5in;
+            margin: $pageMargin;
         }
         
         body {
@@ -494,6 +709,28 @@ function New-ScheduleCSS {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
+        }
+        
+        .header-qr {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-right: 10px;
+            flex-shrink: 0;
+        }
+        
+        .qr-code {
+            width: 60px;
+            height: 60px;
+            border: 1px solid $SecondaryColor;
+        }
+        
+        .qr-text {
+            font-size: 7px;
+            color: $PrimaryColor;
+            font-weight: bold;
+            margin-top: 2px;
+            text-align: center;
         }
         
         .header-content {
@@ -569,11 +806,11 @@ function New-ScheduleCSS {
         
         .schedule-table td {
             border: 1px solid #ccc;
-            padding: 5px 3px;
+            padding: 4px 3px;
             vertical-align: top;
             font-size: 9px;
             line-height: 1.1;
-            height: 65px;
+            height: 58px;
         }
         
         .schedule-table tr:nth-child(even) td {
@@ -624,6 +861,20 @@ function New-ScheduleCSS {
             border: 1px solid $SecondaryColor;
         }
         
+        .session-track {
+            color: $SecondaryColor;
+            font-weight: bold;
+            font-size: 7px;
+            margin-top: 2px;
+            text-transform: uppercase;
+            background-color: ${lightSecondaryColor};
+            padding: 1px 4px;
+            border-radius: 2px;
+            display: inline-block;
+            border: 1px solid $PrimaryColor;
+            margin-left: 4px;
+        }
+        
         .session-time {
             color: $PrimaryColor;
             font-weight: bold;
@@ -667,27 +918,31 @@ function New-ScheduleCSS {
         .keynote-cell, .lunch-cell, .raffle-cell {
             border: 2px solid $PrimaryColor;
             text-align: center;
-            padding: 8px;
+            padding: 4px;
+            height: 40px;
         }
         
         .keynote-title, .lunch-title, .raffle-title {
             font-weight: bold;
             color: $PrimaryColor;
-            font-size: 10px;
-            margin-bottom: 2px;
+            font-size: 9px;
+            margin-bottom: 1px;
+            line-height: 1.0;
         }
         
         .keynote-speaker {
             color: $PrimaryColor;
             font-style: italic;
-            font-size: 8px;
+            font-size: 7px;
+            line-height: 1.0;
         }
         
         .keynote-room, .lunch-room, .raffle-room {
             color: $PrimaryColor;
             font-weight: bold;
-            font-size: 8px;
-            margin-top: 2px;
+            font-size: 7px;
+            margin-top: 1px;
+            line-height: 1.0;
         }
         
         .empty-cell {
@@ -704,7 +959,11 @@ function New-ScheduleCSS {
             }
             
             .schedule-table td {
-                height: 60px;
+                height: 54px;
+            }
+            
+            .keynote-cell, .lunch-cell, .raffle-cell {
+                height: 36px;
             }
         }
 "@
@@ -778,18 +1037,27 @@ foreach ($currentDay in $daysToProcess) {
     
     Write-Host "🏢 Found $($allRooms.Count) rooms: $($allRooms.name -join ', ')" -ForegroundColor Cyan
     
-    # Determine how to split rooms for this day
-    if ($allRooms.Count -le 5) {
-        # Small number of rooms - put all on one page, add blank page for printing
-        Write-Host "📄 Single page layout for $dayName (adding blank page for printing)" -ForegroundColor Green
-        $page1Rooms = $allRooms
-        $page2Rooms = @()  # Empty for blank page
+    # Dynamically determine optimal room distribution based on content width
+    $roomPages = Get-OptimalRoomDistribution -rooms $allRooms -pageSize $PageSize -roomPrefix $RoomPrefix
+    
+    Write-Host "📄 Generating $($roomPages.Count) pages for $dayName" -ForegroundColor Green
+    
+    for ($pageIndex = 0; $pageIndex -lt $roomPages.Count; $pageIndex++) {
+        $currentPageRooms = $roomPages[$pageIndex]
+        $isFirstPage = $pageIndex -eq 0
+        $isLastPage = $pageIndex -eq ($roomPages.Count - 1)
         
-        $page1Html = New-TimeSlotGrid -dayData $currentDay -dayTitle $dayName -roomsToInclude $page1Rooms -timeSlots $timeSlots -specialEvents $specialEvents -roomPrefix $RoomPrefix -EventName $EventName -EventDate $EventDate -LocationName $LocationName -Website $Website -LogoPath $LogoPath -IncludeHeader $true
-        $allDayPages += $page1Html
+        Write-Host "   � Page $($pageIndex + 1): $($currentPageRooms.name -join ', ')" -ForegroundColor White
         
-        # Add blank page (no header)
-        $blankPageHtml = @"
+        # Don't show day title if filtering for specific date, or if not the first page
+        $pageTitle = if ($EventDateFilter -or -not $isFirstPage) { $null } else { $dayName }
+        
+        $pageHtml = New-TimeSlotGrid -dayData $currentDay -dayTitle $pageTitle -roomsToInclude $currentPageRooms -timeSlots $timeSlots -specialEvents $specialEvents -roomPrefix $RoomPrefix -EventName $EventName -EventDate $EventDate -LocationName $LocationName -Website $Website -LogoPath $LogoPath -AppUrl $AppUrl -IncludeHeader $isFirstPage
+        $allDayPages += $pageHtml
+        
+        # Add blank page after last page if we have an odd number of total pages (for double-sided printing alignment)
+        if ($isLastPage -and $roomPages.Count % 2 -eq 1) {
+            $blankPageHtml = @"
 <div class="day-section">
     <div style="text-align: center; padding-top: 200px; font-size: 16px; color: #666;">
         <div style="margin-bottom: 20px;">📄 This page intentionally left blank</div>
@@ -797,23 +1065,9 @@ foreach ($currentDay in $daysToProcess) {
     </div>
 </div>
 "@
-        $allDayPages += $blankPageHtml
-        
-    } else {
-        # Split rooms across two pages
-        Write-Host "📄 Two-page layout for $dayName" -ForegroundColor Green
-        $midPoint = [Math]::Ceiling($allRooms.Count / 2)
-        $page1Rooms = $allRooms[0..($midPoint-1)]
-        $page2Rooms = $allRooms[$midPoint..($allRooms.Count-1)]
-        
-        Write-Host "   📋 Page 1: $($page1Rooms.name -join ', ')" -ForegroundColor White
-        Write-Host "   📋 Page 2: $($page2Rooms.name -join ', ')" -ForegroundColor White
-        
-        $page1Html = New-TimeSlotGrid -dayData $currentDay -dayTitle "$dayName (Page 1 of 2)" -roomsToInclude $page1Rooms -timeSlots $timeSlots -specialEvents $specialEvents -roomPrefix $RoomPrefix -EventName $EventName -EventDate $EventDate -LocationName $LocationName -Website $Website -LogoPath $LogoPath -IncludeHeader $true
-        $page2Html = New-TimeSlotGrid -dayData $currentDay -dayTitle "$dayName (Page 2 of 2)" -roomsToInclude $page2Rooms -timeSlots $timeSlots -specialEvents $specialEvents -roomPrefix $RoomPrefix -EventName $EventName -EventDate $EventDate -LocationName $LocationName -Website $Website -LogoPath $LogoPath -IncludeHeader $false
-        
-        $allDayPages += $page1Html
-        $allDayPages += $page2Html
+            $allDayPages += $blankPageHtml
+            Write-Host "   📄 Added blank page for double-sided printing alignment" -ForegroundColor Gray
+        }
     }
 }
 
