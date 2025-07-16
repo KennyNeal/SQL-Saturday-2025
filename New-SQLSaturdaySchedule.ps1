@@ -58,21 +58,24 @@ Time slots, keynotes, lunch, and raffle times are automatically detected from th
 
 [CmdletBinding()]
 param(
-    [string]$ApiUrl = "https://sessionize.com/api/v2/qta105as/view/GridSmart",
-    [string]$OutputPath = "SQL_Saturday_Schedule.html",
-    [string]$EventName = "SQL Saturday Baton Rouge 2025",
-    [string]$EventDate = "Saturday, July 26, 2025",
-    [string]$EventDateFilter = "2025-07-26T00:00:00",
+    [Parameter(Mandatory=$true)]
+    [string]$ApiUrl,
+    [string]$OutputPath,
+    [Parameter(Mandatory=$true)]
+    [string]$EventName,
+    [Parameter(Mandatory=$true)]
+    [string]$EventDate,
+    [string]$EventDateFilter,
     [ValidateSet("letter", "legal", "a4")]
     [string]$PageSize = "letter",
     [ValidateSet("landscape", "portrait")]
     [string]$Orientation = "landscape",
     [string]$PrimaryColor = "#2F5233",
     [string]$SecondaryColor = "#8FBC8F",
-    [string]$LogoPath = "Images/SQL_2025.png",
-    [string]$LocationName = "LSU Business Education Complex",
-    [string]$Website = "www.sqlsatbr.com",
-    [string]$RoomPrefix = "BEC "
+    [string]$LogoPath,
+    [string]$LocationName,
+    [string]$Website,
+    [string]$RoomPrefix
 )
 
 # Function to automatically detect time slots from schedule data
@@ -604,6 +607,15 @@ function New-ScheduleCSS {
 Write-Host "=== SQL Saturday Schedule Generator ===" -ForegroundColor Cyan
 Write-Host "📡 Fetching data from Sessionize API..." -ForegroundColor Green
 
+# Set default values for optional parameters
+if (-not $OutputPath) { $OutputPath = "Schedule.html" }
+if (-not $RoomPrefix) { $RoomPrefix = "" }
+
+# If EventDateFilter is not provided, we'll try to find Saturday from the API data
+if (-not $EventDateFilter) {
+    Write-Host "🔍 EventDateFilter not provided, will detect Saturday from API data..." -ForegroundColor Yellow
+}
+
 try {
     # Fetch data from API
     $response = Invoke-RestMethod -Uri $ApiUrl -Method Get
@@ -615,11 +627,33 @@ try {
 
 Write-Host "🔄 Processing schedule data..." -ForegroundColor Green
 
-# Get only the main event day using the filter
-$mainDay = $response | Where-Object { $_.date -eq $EventDateFilter }
+# Get the main event day
+if ($EventDateFilter) {
+    # Use provided filter
+    $mainDay = $response | Where-Object { $_.date -eq $EventDateFilter }
+} else {
+    # Auto-detect Saturday (SQL Saturday events are typically on Saturday)
+    $saturdayData = $response | Where-Object { 
+        $dayOfWeek = ([DateTime]$_.date).DayOfWeek
+        $dayOfWeek -eq "Saturday"
+    }
+    
+    if ($saturdayData) {
+        $mainDay = $saturdayData | Select-Object -First 1
+        Write-Host "✅ Auto-detected Saturday: $($mainDay.date)" -ForegroundColor Green
+    } else {
+        # If no Saturday found, use the first day
+        $mainDay = $response | Select-Object -First 1
+        Write-Host "⚠️ No Saturday found, using first available day: $($mainDay.date)" -ForegroundColor Yellow
+    }
+}
 
 if (-not $mainDay) {
-    Write-Error "❌ No schedule data found for date: $EventDateFilter"
+    if ($EventDateFilter) {
+        Write-Error "❌ No schedule data found for date: $EventDateFilter"
+    } else {
+        Write-Error "❌ No schedule data found in API response"
+    }
     return
 }
 
@@ -650,17 +684,48 @@ $css
         <div class="header-content">
             <h1>$EventName</h1>
             <div class="date">$EventDate</div>
-            <div style="font-size: 10px; margin-top: 3px;">
-                📍 $LocationName • 🌐 $Website
-            </div>
+"@
+
+# Add location and website if provided
+if ($LocationName -or $Website) {
+    $htmlContent += "`n            <div style=`"font-size: 10px; margin-top: 3px;`">"
+    if ($LocationName) {
+        $htmlContent += "📍 $LocationName"
+        if ($Website) { $htmlContent += " • " }
+    }
+    if ($Website) {
+        $htmlContent += "🌐 $Website"
+    }
+    $htmlContent += "</div>"
+}
+
+$htmlContent += @"
+
             <div style="font-size: 8px; margin-top: 3px; color: #495057;">
                 🎫 FREE Event • 📝 Registration: 8:00 AM • 🎁 Raffle: 3:45 PM
             </div>
             <div style="font-size: 7px; margin-top: 5px; color: #666;">
-                Schedule generated $(Get-Date -Format 'MMMM dd, yyyy') • For session abstracts and speaker bios, visit <strong>$Website</strong>
+                Schedule generated $(Get-Date -Format 'MMMM dd, yyyy')
+"@
+
+# Add website reference if provided
+if ($Website) {
+    $htmlContent += " • For session abstracts and speaker bios, visit <strong>$Website</strong>"
+}
+
+$htmlContent += @"
+
             </div>
         </div>
-        <img src="$LogoPath" alt="$EventName Logo" class="header-logo">
+"@
+
+# Add logo if provided
+if ($LogoPath) {
+    $htmlContent += "`n        <img src=`"$LogoPath`" alt=`"$EventName Logo`" class=`"header-logo`">"
+}
+
+$htmlContent += @"
+
     </div>
 "@
 

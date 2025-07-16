@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Test Event - Schedule</title>
+    <title>SQL Saturday Test - Schedule</title>
     <style>
         @page {
             size: letter landscape;
@@ -234,46 +234,15 @@
 <body>
     <div class="header">
         <div class="header-content">
-            <h1>Test Event</h1>
-            <div class="date">Test Date</div>"@
-
-# Add location and website if provided
-if ( -or ) {
-     += "
-            <div style="font-size: 10px; margin-top: 3px;">"
-    if () {
-         += "📍 "
-        if () {  += " • " }
-    }
-    if () {
-         += "🌐 "
-    }
-     += "</div>"
-}
-
- += @"
+            <h1>SQL Saturday Test</h1>
+            <div class="date">July 26, 2025</div>
             <div style="font-size: 8px; margin-top: 3px; color: #495057;">
                 🎫 FREE Event • 📝 Registration: 8:00 AM • 🎁 Raffle: 3:45 PM
             </div>
             <div style="font-size: 7px; margin-top: 5px; color: #666;">
-                Schedule generated July 16, 2025"@
-
-# Add website reference if provided
-if () {
-     += " • For session abstracts and speaker bios, visit <strong></strong>"
-}
-
- += @"
+                Schedule generated July 16, 2025
             </div>
-        </div>"@
-
-# Add logo if provided
-if () {
-     += "
-        <img src="" alt="Test Event Logo" class="header-logo">"
-}
-
- += @"
+        </div>
     </div><div class="day-section">
     <table class="schedule-table">
         <thead>

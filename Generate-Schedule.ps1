@@ -92,7 +92,7 @@ function New-TimeSlotGrid {
                     $roomName = if ($keynoteRoom) { $keynoteRoom.name -replace "BEC ", "" } else { "Auditorium" }
                     $colspan = $roomsToInclude.Count
                     $html += "<td class='keynote-cell' colspan='$colspan'>"
-                    $html += "<div class='keynote-title'>🎤 KEYNOTE: $($keynoteSession.title)</div>`n"
+                    $html += "<div class='keynote-title'>🎤 $($keynoteSession.title)</div>`n"
                     $html += "<div class='keynote-speaker'>$($keynoteSession.speakers[0].name)</div>`n"
                     $html += "<div class='keynote-room'>📍 $roomName</div>`n"
                     $html += "</td>`n"
