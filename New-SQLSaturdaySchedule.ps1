@@ -93,15 +93,25 @@ function Get-TimeSlots {
         
         $plenumSessions = $slot.rooms | Where-Object { $_.session.isPlenumSession -eq $true }
         
-        # Skip 8:00 AM slot (pre-event workshops/registration)
+        # Skip 8:00 AM slot only if it looks like registration/check-in
         if ($slot.slotStart -eq "08:00:00") {
-            continue
+            # Check if this 8:00 AM slot has actual sessions vs registration
+            $hasRealSessions = $regularSessions | Where-Object { 
+                $_.session.title -notmatch "registration|check.?in|sign.?in|welcome|opening" 
+            }
+            if (-not $hasRealSessions) {
+                Write-Host "   ⏰ Skipping 8:00 AM slot - appears to be registration/check-in" -ForegroundColor Gray
+                continue
+            } else {
+                Write-Host "   ⏰ Including 8:00 AM slot - contains regular sessions" -ForegroundColor Green
+            }
         }
         
         # Include this time slot if:
         # 1. It has plenum sessions (keynote, lunch, raffle), OR
-        # 2. It has multiple regular sessions (3+ concurrent sessions indicates a main time block)
-        if ($plenumSessions.Count -gt 0 -or $regularSessions.Count -ge 3) {
+        # 2. It has multiple regular sessions (2+ concurrent sessions for smaller events), OR
+        # 3. It has any regular sessions (for days with fewer concurrent sessions like Friday)
+        if ($plenumSessions.Count -gt 0 -or $regularSessions.Count -ge 2 -or ($regularSessions.Count -ge 1 -and $dayData.rooms.Count -le 3)) {
             $mainTimeSlots += $slot.slotStart
         }
     }
@@ -161,6 +171,69 @@ function Get-SpecialEvents {
     return $specialEvents
 }
 
+# Function to create header HTML
+function New-HeaderHtml {
+    param(
+        [string]$EventName,
+        [string]$EventDate,
+        [string]$LocationName,
+        [string]$Website,
+        [string]$LogoPath
+    )
+    
+    $headerHtml = @"
+    <div class="header">
+        <div class="header-content">
+            <h1>$EventName</h1>
+            <div class="date">$EventDate</div>
+"@
+
+    # Add location and website if provided
+    if ($LocationName -or $Website) {
+        $headerHtml += "`n            <div style=`"font-size: 8px; margin-top: 2px;`">"
+        if ($LocationName) {
+            $headerHtml += "📍 $LocationName"
+            if ($Website) { $headerHtml += " • " }
+        }
+        if ($Website) {
+            $headerHtml += "🌐 $Website"
+        }
+        $headerHtml += "</div>"
+    }
+
+    $headerHtml += @"
+
+            <div style="font-size: 7px; margin-top: 2px; color: #495057;">
+                🎫 FREE Event • 📝 Registration: 8:00 AM • 🎁 Raffle: 3:45 PM
+            </div>
+            <div style="font-size: 6px; margin-top: 3px; color: #666;">
+                Schedule generated $(Get-Date -Format 'MMMM dd, yyyy')
+"@
+
+    # Add website reference if provided
+    if ($Website) {
+        $headerHtml += " • For session abstracts and speaker bios, visit <strong>$Website</strong>"
+    }
+
+    $headerHtml += @"
+
+            </div>
+        </div>
+"@
+
+    # Add logo if provided
+    if ($LogoPath) {
+        $headerHtml += "`n        <img src=`"$LogoPath`" alt=`"$EventName Logo`" class=`"header-logo`">"
+    }
+
+    $headerHtml += @"
+
+    </div>
+"@
+
+    return $headerHtml
+}
+
 # Function to create time slot grid for specific rooms
 function New-TimeSlotGrid {
     param(
@@ -169,11 +242,33 @@ function New-TimeSlotGrid {
         $roomsToInclude,
         $timeSlots,
         $specialEvents,
-        $roomPrefix
+        $roomPrefix,
+        $EventName,
+        $EventDate,
+        $LocationName,
+        $Website,
+        $LogoPath,
+        $IncludeHeader = $false
     )
     
     $html = @"
 <div class="day-section">
+"@
+
+    # Add header only if requested (first page of each day)
+    if ($IncludeHeader) {
+        $headerHtml = New-HeaderHtml -EventName $EventName -EventDate $EventDate -LocationName $LocationName -Website $Website -LogoPath $LogoPath
+        $html += $headerHtml
+    }
+
+    # Add day title if provided
+    if ($dayTitle) {
+        $html += @"
+    <div class="day-title">$dayTitle</div>
+"@
+    }
+
+    $html += @"
     <table class="schedule-table">
         <thead>
             <tr>
@@ -255,7 +350,8 @@ function New-TimeSlotGrid {
         
         # Calculate time window for this slot (e.g., 8:30-9:40, 9:40-10:45, etc.)
         $currentTime = [DateTime]::ParseExact($timeSlot, "HH:mm:ss", $null)
-        $nextTimeSlot = $timeSlots[([array]::IndexOf($timeSlots, $timeSlot) + 1)]
+        $nextTimeSlotIndex = ([array]::IndexOf($timeSlots, $timeSlot) + 1)
+        $nextTimeSlot = if ($nextTimeSlotIndex -lt $timeSlots.Count) { $timeSlots[$nextTimeSlotIndex] } else { $null }
         $nextTime = if ($nextTimeSlot) { [DateTime]::ParseExact($nextTimeSlot, "HH:mm:ss", $null) } else { $currentTime.AddHours(2) }
         
         foreach ($room in $roomsToInclude) {
@@ -391,9 +487,9 @@ function New-ScheduleCSS {
         }
         
         .header {
-            margin-bottom: 15px;
-            border-bottom: 3px solid $PrimaryColor;
-            padding-bottom: 10px;
+            margin-bottom: 10px;
+            border-bottom: 2px solid $PrimaryColor;
+            padding-bottom: 6px;
             position: relative;
             display: flex;
             justify-content: space-between;
@@ -406,27 +502,38 @@ function New-ScheduleCSS {
         }
         
         .header-logo {
-            height: 80px;
+            height: 60px;
             width: auto;
-            max-width: 120px;
+            max-width: 100px;
             flex-shrink: 0;
         }
         
         .header h1 {
             margin: 0;
-            font-size: 20px;
+            font-size: 16px;
             color: $PrimaryColor;
             font-weight: bold;
+            line-height: 1.1;
         }
         
         .header .date {
-            font-size: 12px;
+            font-size: 10px;
             color: #495057;
-            margin: 3px 0;
+            margin: 2px 0;
         }
         
         .day-section {
             margin-bottom: 15px;
+        }
+        
+        .day-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: $PrimaryColor;
+            text-align: center;
+            margin-bottom: 10px;
+            padding: 5px;
+            border-bottom: 2px solid $SecondaryColor;
         }
         
         .schedule-table {
@@ -611,11 +718,6 @@ Write-Host "📡 Fetching data from Sessionize API..." -ForegroundColor Green
 if (-not $OutputPath) { $OutputPath = "Schedule.html" }
 if (-not $RoomPrefix) { $RoomPrefix = "" }
 
-# If EventDateFilter is not provided, we'll try to find Saturday from the API data
-if (-not $EventDateFilter) {
-    Write-Host "🔍 EventDateFilter not provided, will detect Saturday from API data..." -ForegroundColor Yellow
-}
-
 try {
     # Fetch data from API
     $response = Invoke-RestMethod -Uri $ApiUrl -Method Get
@@ -627,42 +729,95 @@ try {
 
 Write-Host "🔄 Processing schedule data..." -ForegroundColor Green
 
-# Get the main event day
+# Determine which days to process
+$daysToProcess = @()
 if ($EventDateFilter) {
-    # Use provided filter
-    $mainDay = $response | Where-Object { $_.date -eq $EventDateFilter }
-} else {
-    # Auto-detect Saturday (SQL Saturday events are typically on Saturday)
-    $saturdayData = $response | Where-Object { 
-        $dayOfWeek = ([DateTime]$_.date).DayOfWeek
-        $dayOfWeek -eq "Saturday"
-    }
-    
-    if ($saturdayData) {
-        $mainDay = $saturdayData | Select-Object -First 1
-        Write-Host "✅ Auto-detected Saturday: $($mainDay.date)" -ForegroundColor Green
+    # Use provided filter for specific day
+    $specificDay = $response | Where-Object { $_.date -eq $EventDateFilter }
+    if ($specificDay) {
+        $daysToProcess += $specificDay
+        Write-Host "✅ Processing specific date: $($specificDay.date)" -ForegroundColor Green
     } else {
-        # If no Saturday found, use the first day
-        $mainDay = $response | Select-Object -First 1
-        Write-Host "⚠️ No Saturday found, using first available day: $($mainDay.date)" -ForegroundColor Yellow
+        Write-Error "❌ No schedule data found for date: $EventDateFilter"
+        return
     }
+} else {
+    # Process all available days
+    $daysToProcess = $response | Sort-Object { [DateTime]$_.date }
+    Write-Host "📅 Processing all available days: $($daysToProcess.date -join ', ')" -ForegroundColor Green
 }
 
-if (-not $mainDay) {
-    if ($EventDateFilter) {
-        Write-Error "❌ No schedule data found for date: $EventDateFilter"
-    } else {
-        Write-Error "❌ No schedule data found in API response"
-    }
+if ($daysToProcess.Count -eq 0) {
+    Write-Error "❌ No schedule data found in API response"
     return
 }
 
-# Automatically detect time slots and special events
+# Automatically detect time slots and special events for each day
 Write-Host "🔍 Analyzing schedule structure..." -ForegroundColor Cyan
-$timeSlots = Get-TimeSlots -dayData $mainDay
-$specialEvents = Get-SpecialEvents -dayData $mainDay
 
-Write-Host "✅ Schedule analysis complete!" -ForegroundColor Green
+# Process each day individually
+$allDayPages = @()
+foreach ($currentDay in $daysToProcess) {
+    $dayName = ([DateTime]$currentDay.date).ToString("dddd, MMMM dd, yyyy")
+    
+    Write-Host "📅 Processing $dayName..." -ForegroundColor Yellow
+    
+    $timeSlots = Get-TimeSlots -dayData $currentDay
+    $specialEvents = Get-SpecialEvents -dayData $currentDay
+    
+    # Get all rooms for this day (excluding service rooms like Atrium)
+    $allRooms = $currentDay.rooms | Where-Object { 
+        $_.name -ne "Atrium" -and 
+        $_.name -notmatch "Registration|Check.?in|Lobby" 
+    } | Sort-Object name
+    
+    if ($allRooms.Count -eq 0) {
+        Write-Host "⚠️ No session rooms found for $dayName, skipping..." -ForegroundColor Yellow
+        continue
+    }
+    
+    Write-Host "🏢 Found $($allRooms.Count) rooms: $($allRooms.name -join ', ')" -ForegroundColor Cyan
+    
+    # Determine how to split rooms for this day
+    if ($allRooms.Count -le 5) {
+        # Small number of rooms - put all on one page, add blank page for printing
+        Write-Host "📄 Single page layout for $dayName (adding blank page for printing)" -ForegroundColor Green
+        $page1Rooms = $allRooms
+        $page2Rooms = @()  # Empty for blank page
+        
+        $page1Html = New-TimeSlotGrid -dayData $currentDay -dayTitle $dayName -roomsToInclude $page1Rooms -timeSlots $timeSlots -specialEvents $specialEvents -roomPrefix $RoomPrefix -EventName $EventName -EventDate $EventDate -LocationName $LocationName -Website $Website -LogoPath $LogoPath -IncludeHeader $true
+        $allDayPages += $page1Html
+        
+        # Add blank page (no header)
+        $blankPageHtml = @"
+<div class="day-section">
+    <div style="text-align: center; padding-top: 200px; font-size: 16px; color: #666;">
+        <div style="margin-bottom: 20px;">📄 This page intentionally left blank</div>
+        <div style="font-size: 12px;">For double-sided printing alignment</div>
+    </div>
+</div>
+"@
+        $allDayPages += $blankPageHtml
+        
+    } else {
+        # Split rooms across two pages
+        Write-Host "📄 Two-page layout for $dayName" -ForegroundColor Green
+        $midPoint = [Math]::Ceiling($allRooms.Count / 2)
+        $page1Rooms = $allRooms[0..($midPoint-1)]
+        $page2Rooms = $allRooms[$midPoint..($allRooms.Count-1)]
+        
+        Write-Host "   📋 Page 1: $($page1Rooms.name -join ', ')" -ForegroundColor White
+        Write-Host "   📋 Page 2: $($page2Rooms.name -join ', ')" -ForegroundColor White
+        
+        $page1Html = New-TimeSlotGrid -dayData $currentDay -dayTitle "$dayName (Page 1 of 2)" -roomsToInclude $page1Rooms -timeSlots $timeSlots -specialEvents $specialEvents -roomPrefix $RoomPrefix -EventName $EventName -EventDate $EventDate -LocationName $LocationName -Website $Website -LogoPath $LogoPath -IncludeHeader $true
+        $page2Html = New-TimeSlotGrid -dayData $currentDay -dayTitle "$dayName (Page 2 of 2)" -roomsToInclude $page2Rooms -timeSlots $timeSlots -specialEvents $specialEvents -roomPrefix $RoomPrefix -EventName $EventName -EventDate $EventDate -LocationName $LocationName -Website $Website -LogoPath $LogoPath -IncludeHeader $false
+        
+        $allDayPages += $page1Html
+        $allDayPages += $page2Html
+    }
+}
+
+Write-Host "✅ Schedule analysis complete! Generated $($allDayPages.Count) pages total." -ForegroundColor Green
 
 # Generate CSS with custom colors and page size
 $css = New-ScheduleCSS -PageSize $PageSize -Orientation $Orientation -PrimaryColor $PrimaryColor -SecondaryColor $SecondaryColor
@@ -680,74 +835,11 @@ $css
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="header-content">
-            <h1>$EventName</h1>
-            <div class="date">$EventDate</div>
 "@
 
-# Add location and website if provided
-if ($LocationName -or $Website) {
-    $htmlContent += "`n            <div style=`"font-size: 10px; margin-top: 3px;`">"
-    if ($LocationName) {
-        $htmlContent += "📍 $LocationName"
-        if ($Website) { $htmlContent += " • " }
-    }
-    if ($Website) {
-        $htmlContent += "🌐 $Website"
-    }
-    $htmlContent += "</div>"
-}
-
-$htmlContent += @"
-
-            <div style="font-size: 8px; margin-top: 3px; color: #495057;">
-                🎫 FREE Event • 📝 Registration: 8:00 AM • 🎁 Raffle: 3:45 PM
-            </div>
-            <div style="font-size: 7px; margin-top: 5px; color: #666;">
-                Schedule generated $(Get-Date -Format 'MMMM dd, yyyy')
-"@
-
-# Add website reference if provided
-if ($Website) {
-    $htmlContent += " • For session abstracts and speaker bios, visit <strong>$Website</strong>"
-}
-
-$htmlContent += @"
-
-            </div>
-        </div>
-"@
-
-# Add logo if provided
-if ($LogoPath) {
-    $htmlContent += "`n        <img src=`"$LogoPath`" alt=`"$EventName Logo`" class=`"header-logo`">"
-}
-
-$htmlContent += @"
-
-    </div>
-"@
-
-# Add main event day - split into two pages by rooms
-if ($mainDay) {
-    # Get all rooms (excluding Atrium which is just for registration/lunch)
-    $allRooms = $mainDay.rooms | Where-Object { $_.name -ne "Atrium" } | Sort-Object name
-    
-    # Split rooms into two groups
-    $totalRooms = $allRooms.Count
-    $midPoint = [Math]::Ceiling($totalRooms / 2)
-    
-    $page1Rooms = $allRooms[0..($midPoint-1)]
-    $page2Rooms = $allRooms[$midPoint..($totalRooms-1)]
-    
-    Write-Host "📅 Processing Page 1 Rooms: $($page1Rooms.name -join ', ')..." -ForegroundColor Yellow
-    $page1Html = New-TimeSlotGrid -dayData $mainDay -dayTitle "" -roomsToInclude $page1Rooms -timeSlots $timeSlots -specialEvents $specialEvents -roomPrefix $RoomPrefix
-    $htmlContent += $page1Html
-    
-    Write-Host "📅 Processing Page 2 Rooms: $($page2Rooms.name -join ', ')..." -ForegroundColor Yellow
-    $page2Html = New-TimeSlotGrid -dayData $mainDay -dayTitle "" -roomsToInclude $page2Rooms -timeSlots $timeSlots -specialEvents $specialEvents -roomPrefix $RoomPrefix
-    $htmlContent += $page2Html
+# Add all processed day pages
+foreach ($pageHtml in $allDayPages) {
+    $htmlContent += $pageHtml
 }
 
 # Add footer
@@ -758,7 +850,21 @@ $htmlContent += @"
 
 # Write the HTML file
 try {
-    $fullPath = Join-Path (Get-Location) $OutputPath
+    # Handle output path properly - support both relative and absolute paths
+    if ([System.IO.Path]::IsPathRooted($OutputPath)) {
+        # OutputPath is already an absolute path
+        $fullPath = $OutputPath
+    } else {
+        # OutputPath is relative or just a filename - combine with current directory
+        $fullPath = Join-Path (Get-Location) $OutputPath
+    }
+    
+    # Ensure the directory exists
+    $directory = [System.IO.Path]::GetDirectoryName($fullPath)
+    if (-not (Test-Path $directory)) {
+        New-Item -ItemType Directory -Path $directory -Force | Out-Null
+    }
+    
     $htmlContent | Out-File -FilePath $fullPath -Encoding UTF8
     Write-Host "✅ Schedule generated successfully!" -ForegroundColor Green
     Write-Host "📄 File saved to: $fullPath" -ForegroundColor Gray
@@ -767,8 +873,9 @@ try {
     Write-Host "   2. Set printer to $PageSize size" -ForegroundColor White
     Write-Host "   3. Set orientation to $Orientation" -ForegroundColor White
     Write-Host "   4. Enable double-sided printing (front and back)" -ForegroundColor White
-    Write-Host "   5. Page 1: First half of rooms, Page 2: Second half of rooms" -ForegroundColor White
-    Write-Host "   6. Adjust margins if needed (0.5 inch recommended)" -ForegroundColor White
+    Write-Host "   5. Each day is formatted for optimal printing (max 2 pages per day)" -ForegroundColor White
+    Write-Host "   6. Blank pages are included for proper double-sided alignment" -ForegroundColor White
+    Write-Host "   7. Adjust margins if needed (0.5 inch recommended)" -ForegroundColor White
     
     # Show customization info
     Write-Host "`n🎨 Customization Applied:" -ForegroundColor Magenta
@@ -788,11 +895,3 @@ try {
 }
 
 Write-Host "`n🎉 Schedule generation complete!" -ForegroundColor Green
-Write-Host "`n💡 For next year, update these parameters:" -ForegroundColor Cyan
-Write-Host "   -ApiUrl 'https://sessionize.com/api/v2/[NEWEVENTID]/view/GridSmart'" -ForegroundColor Yellow
-Write-Host "   -EventName 'SQL Saturday [CITY] [YEAR]'" -ForegroundColor Yellow
-Write-Host "   -EventDate '[FULLDATE]'" -ForegroundColor Yellow
-Write-Host "   -EventDateFilter '[YYYY-MM-DDTHH:mm:ss]'" -ForegroundColor Yellow
-Write-Host "   -LogoPath 'Images/[NEWLOGO].png'" -ForegroundColor Yellow
-Write-Host "   -PrimaryColor '#[HEXCOLOR]' -SecondaryColor '#[HEXCOLOR]'" -ForegroundColor Yellow
-Write-Host "`n🤖 Time slots and special events are automatically detected from Sessionize data!" -ForegroundColor Magenta
