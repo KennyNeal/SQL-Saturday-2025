@@ -4,9 +4,9 @@ AS
         SET NOCOUNT ON;
         INSERT INTO
             dbo.AttendeesPrinted
-            ([Order], CreatedDatetime)
+            ([Barcode], CreatedDatetime)
         SELECT
-            agupo.[Order], GETDATE()
+            agupo.[Barcode], GETDATE()
         FROM
             [dbo].[AttendeesGetUnPrintedOrders] AS agupo
         WHERE
@@ -17,10 +17,10 @@ AS
                 FROM
                     dbo.AttendeesPrinted AS ap
                 WHERE
-                    ap.[Order] = agupo.[Order]
+                    ap.[Barcode] = agupo.[Barcode]
             )
         GROUP BY
-            agupo.[Order];
+            agupo.[Barcode];
     END;
 
 GO

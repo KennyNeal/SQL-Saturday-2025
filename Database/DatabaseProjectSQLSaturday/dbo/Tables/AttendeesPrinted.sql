@@ -7,8 +7,3 @@ CREATE TABLE [dbo].[AttendeesPrinted] (
 
 GO
 
-
-ALTER TABLE [dbo].[AttendeesPrinted]
-    ADD CONSTRAINT [PK_AttendeesPrinted] PRIMARY KEY CLUSTERED ([Barcode] ASC);
-GO
-
