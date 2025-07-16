@@ -66,7 +66,6 @@ function New-TimeSlotGrid {
     
     $html = @"
 <div class="day-section">
-    <h2 class="day-title">$dayTitle</h2>
     <table class="schedule-table">
         <thead>
             <tr>
@@ -75,7 +74,7 @@ function New-TimeSlotGrid {
 
     # Use only the specified rooms
     foreach ($room in $roomsToInclude) {
-        $roomName = $room.name -replace "BEC ", "" -replace " \(", "`n(" -replace "\)", ""
+        $roomName = $room.name -replace "BEC ", "" -replace " \(", "`n("
         $html += "<th class='room-column'>$roomName</th>`n"
     }
     
@@ -85,94 +84,91 @@ function New-TimeSlotGrid {
         <tbody>
 "@
 
-    # Group time slots by their start time to handle overlapping sessions
-    $timeGroups = @{}
-    $allTimeSlots = $dayData.timeSlots | Where-Object { 
-        $_.slotStart -notin @("08:00:00", "12:20:00", "15:45:00") 
-    }
+    # Define the specific time slots for the schedule
+    $timeSlots = @("08:30:00", "09:40:00", "10:45:00", "11:20:00", "12:20:00", "13:40:00", "14:45:00", "15:45:00")
     
-    # Group slots by start time or find overlapping slots
-    foreach ($slot in $allTimeSlots) {
-        $startTime = $slot.slotStart
-        $key = $startTime
+    foreach ($timeSlot in $timeSlots) {
+        $time = ([DateTime]::ParseExact($timeSlot, "HH:mm:ss", $null)).ToString("h:mm tt")
         
-        # Check if this slot overlaps with existing groups
-        $foundGroup = $false
-        foreach ($existingKey in $timeGroups.Keys) {
-            $existingSlots = $timeGroups[$existingKey]
-            foreach ($existingSlot in $existingSlots) {
-                $existingStart = [DateTime]::ParseExact($existingSlot.slotStart, "HH:mm:ss", $null)
-                $existingEnd = if ($existingSlot.slotEnd) { [DateTime]::ParseExact($existingSlot.slotEnd, "HH:mm:ss", $null) } else { $existingStart.AddHours(1) }
-                $currentStart = [DateTime]::ParseExact($slot.slotStart, "HH:mm:ss", $null)
-                $currentEnd = if ($slot.slotEnd) { [DateTime]::ParseExact($slot.slotEnd, "HH:mm:ss", $null) } else { $currentStart.AddHours(1) }
-                
-                # Check for overlap
-                if (($currentStart -ge $existingStart -and $currentStart -lt $existingEnd) -or 
-                    ($existingStart -ge $currentStart -and $existingStart -lt $currentEnd)) {
-                    $timeGroups[$existingKey] += $slot
-                    $foundGroup = $true
-                    break
-                }
-            }
-            if ($foundGroup) { break }
-        }
-        
-        if (-not $foundGroup) {
-            if (-not $timeGroups.ContainsKey($key)) {
-                $timeGroups[$key] = @()
-            }
-            $timeGroups[$key] += $slot
-        }
-    }
-    
-    # Sort time groups by earliest start time
-    $sortedTimeGroups = $timeGroups.GetEnumerator() | Sort-Object { [DateTime]::ParseExact($_.Key, "HH:mm:ss", $null) }
-    
-    foreach ($timeGroup in $sortedTimeGroups) {
-        $slots = $timeGroup.Value
-        $primarySlot = $slots | Sort-Object slotStart | Select-Object -First 1
-        $time = ([DateTime]::ParseExact($primarySlot.slotStart, "HH:mm:ss", $null)).ToString("h:mm tt")
-        
-        # Special handling for keynote
-        if ($primarySlot.slotStart -eq "10:45:00") {
+        # Special handling for keynote at 10:45
+        if ($timeSlot -eq "10:45:00") {
             $html += "<tr class='keynote-row'>`n<td class='time-cell'>$time</td>`n"
-            $keynoteSession = ($primarySlot.rooms | Where-Object { $_.session.isPlenumSession }).session
-            if ($keynoteSession) {
-                $keynoteRoom = ($primarySlot.rooms | Where-Object { $_.session.isPlenumSession })
-                $roomName = if ($keynoteRoom) { $keynoteRoom.name -replace "BEC ", "" } else { "Auditorium" }
-                $colspan = $roomsToInclude.Count
-                $html += "<td class='keynote-cell' colspan='$colspan'>"
-                $html += "<div class='keynote-title'>🎤 KEYNOTE: $($keynoteSession.title)</div>`n"
-                $html += "<div class='keynote-speaker'>$($keynoteSession.speakers[0].name)</div>`n"
-                $html += "<div class='keynote-room'>📍 $roomName</div>`n"
-                $html += "</td>`n"
+            # Find keynote session in the data
+            $keynoteSlot = $dayData.timeSlots | Where-Object { $_.slotStart -eq "10:45:00" } | Select-Object -First 1
+            if ($keynoteSlot) {
+                $keynoteSession = ($keynoteSlot.rooms | Where-Object { $_.session.isPlenumSession }).session
+                if ($keynoteSession) {
+                    $keynoteRoom = ($keynoteSlot.rooms | Where-Object { $_.session.isPlenumSession })
+                    $roomName = if ($keynoteRoom) { $keynoteRoom.name -replace "BEC ", "" } else { "Auditorium" }
+                    $colspan = $roomsToInclude.Count
+                    $html += "<td class='keynote-cell' colspan='$colspan'>"
+                    $html += "<div class='keynote-title'>🎤 $($keynoteSession.title)</div>`n"
+                    $html += "<div class='keynote-speaker'>$($keynoteSession.speakers[0].name)</div>`n"
+                    $html += "<div class='keynote-room'>📍 $roomName</div>`n"
+                    $html += "</td>`n"
+                }
             }
             $html += "</tr>`n"
             continue
         }
         
+        # Special handling for lunch at 12:20
+        if ($timeSlot -eq "12:20:00") {
+            $html += "<tr class='lunch-row'>`n<td class='time-cell'>$time</td>`n"
+            $colspan = $roomsToInclude.Count
+            $html += "<td class='lunch-cell' colspan='$colspan'>"
+            $html += "<div class='lunch-title'>LUNCH</div>`n"
+            $html += "<div class='lunch-room'>📍 Atrium</div>`n"
+            $html += "</td>`n"
+            $html += "</tr>`n"
+            continue
+        }
+        
+        # Special handling for raffle at 3:45
+        if ($timeSlot -eq "15:45:00") {
+            $html += "<tr class='raffle-row'>`n<td class='time-cell'>$time</td>`n"
+            $colspan = $roomsToInclude.Count
+            $html += "<td class='raffle-cell' colspan='$colspan'>"
+            $html += "<div class='raffle-title'>🎁 RAFFLE & CLOSING</div>`n"
+            $html += "<div class='raffle-room'>📍 Auditorium</div>`n"
+            $html += "</td>`n"
+            $html += "</tr>`n"
+            continue
+        }
+        
+        # Regular session time slot - find all sessions that fall within this time window
         $html += "<tr>`n<td class='time-cell'>$time</td>`n"
+        
+        # Calculate time window for this slot (e.g., 8:30-9:40, 9:40-10:45, etc.)
+        $currentTime = [DateTime]::ParseExact($timeSlot, "HH:mm:ss", $null)
+        $nextTimeSlot = $timeSlots[([array]::IndexOf($timeSlots, $timeSlot) + 1)]
+        $nextTime = if ($nextTimeSlot) { [DateTime]::ParseExact($nextTimeSlot, "HH:mm:ss", $null) } else { $currentTime.AddHours(2) }
         
         foreach ($room in $roomsToInclude) {
             $sessionsInRoom = @()
             
-            # Look through all slots in this time group for sessions in this room
-            foreach ($slot in $slots) {
-                $sessionInSlot = $slot.rooms | Where-Object { $_.id -eq $room.id }
+            # Find all sessions for this room that start within this time window
+            foreach ($slot in $dayData.timeSlots) {
+                $slotStart = [DateTime]::ParseExact($slot.slotStart, "HH:mm:ss", $null)
                 
-                if ($sessionInSlot -and $sessionInSlot.session -and -not $sessionInSlot.session.isServiceSession) {
-                    $session = $sessionInSlot.session
-                    $startTime = ([DateTime]::ParseExact($slot.slotStart, "HH:mm:ss", $null)).ToString("h:mm tt")
-                    $endTime = if ($slot.slotEnd) { ([DateTime]::ParseExact($slot.slotEnd, "HH:mm:ss", $null)).ToString("h:mm tt") } else { "" }
-                    $duration = if ($slot.slotEnd) { 
-                        ([DateTime]::ParseExact($slot.slotEnd, "HH:mm:ss", $null) - [DateTime]::ParseExact($slot.slotStart, "HH:mm:ss", $null)).TotalMinutes 
-                    } else { 60 }
+                # Check if this slot starts within our time window
+                if ($slotStart -ge $currentTime -and $slotStart -lt $nextTime) {
+                    $sessionInRoom = $slot.rooms | Where-Object { $_.id -eq $room.id }
                     
-                    $sessionsInRoom += @{
-                        Session = $session
-                        StartTime = $startTime
-                        EndTime = $endTime
-                        Duration = $duration
+                    if ($sessionInRoom -and $sessionInRoom.session -and -not $sessionInRoom.session.isServiceSession) {
+                        $session = $sessionInRoom.session
+                        $startTime = ([DateTime]::ParseExact($slot.slotStart, "HH:mm:ss", $null)).ToString("h:mm tt")
+                        $endTime = if ($slot.slotEnd) { ([DateTime]::ParseExact($slot.slotEnd, "HH:mm:ss", $null)).ToString("h:mm tt") } else { "" }
+                        $duration = if ($slot.slotEnd) { 
+                            ([DateTime]::ParseExact($slot.slotEnd, "HH:mm:ss", $null) - [DateTime]::ParseExact($slot.slotStart, "HH:mm:ss", $null)).TotalMinutes 
+                        } else { 60 }
+                        
+                        $sessionsInRoom += @{
+                            Session = $session
+                            StartTime = $startTime
+                            EndTime = $endTime
+                            Duration = $duration
+                        }
                     }
                 }
             }
@@ -189,17 +185,22 @@ function New-TimeSlotGrid {
                     $isLightningTalk = $title -match "Lightning Talk" -or $sessionInfo.Duration -le 15
                     $isKeynote = $session.isPlenumSession
                     
-                    if (-not $isLightningTalk -and -not $isKeynote -and $session.categoryItems -and $session.categoryItems.Count -gt 0) { 
-                        $levelCategory = $session.categoryItems | Where-Object { $_.name -match "Level|Beginner|Intermediate|Advanced|100|200|300|400" }
-                        if ($levelCategory) { 
-                            $level = $levelCategory.name 
+                    if (-not $isLightningTalk -and -not $isKeynote) { 
+                        if ($session.categoryItems -and $session.categoryItems.Count -gt 0) {
+                            $levelCategory = $session.categoryItems | Where-Object { $_.name -match "Level|Beginner|Intermediate|Advanced|100|200|300|400" }
+                            if ($levelCategory) { 
+                                $level = "Level: " + $levelCategory.name 
+                            } else {
+                                # If no specific level found, default to "Intermediate" for regular sessions
+                                $level = "Level: Intermediate"
+                            }
                         } else {
-                            # If no specific level found, default to "Intermediate" for regular sessions
-                            $level = "Intermediate"
+                            # If no category items, default to "Intermediate" for regular sessions
+                            $level = "Level: Intermediate"
                         }
                     }
                     
-                    # Add session block
+                    # Add session block if multiple sessions
                     if ($sessionsInRoom.Count -gt 1) {
                         $html += "<div class='session-block'>"
                     }
@@ -235,18 +236,12 @@ function New-TimeSlotGrid {
         $html += "</tr>`n"
     }
     
-    # Add raffle row at 3:45 PM
-    $html += "<tr class='raffle-row'>`n<td class='time-cell'>3:45 PM</td>`n"
-    $colspan = $roomsToInclude.Count
-    $html += "<td class='raffle-cell' colspan='$colspan'>"
-    $html += "<div class='raffle-title'>🎁 RAFFLE & CLOSING</div>`n"
-    $html += "<div class='raffle-room'>📍 Auditorium</div>`n"
-    $html += "</td>`n"
-    $html += "</tr>`n"
-    
     $html += @"
         </tbody>
     </table>
+    <div style="text-align: center; margin-top: 10px; font-size: 8px; color: #666; font-style: italic;">
+        ➤ Continued on other side
+    </div>
 </div>
 "@
     
@@ -263,7 +258,7 @@ $htmlContent = @"
     <title>$EventName - Schedule</title>
     <style>
         @page {
-            size: legal landscape;
+            size: letter landscape;
             margin: 0.5in;
         }
         
@@ -277,22 +272,37 @@ $htmlContent = @"
         }
         
         .header {
-            text-align: center;
             margin-bottom: 15px;
-            border-bottom: 3px solid #0066cc;
+            border-bottom: 3px solid #2F5233;
             padding-bottom: 10px;
+            position: relative;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        
+        .header-content {
+            text-align: center;
+            flex: 1;
+        }
+        
+        .header-logo {
+            height: 80px;
+            width: auto;
+            max-width: 120px;
+            flex-shrink: 0;
         }
         
         .header h1 {
             margin: 0;
             font-size: 20px;
-            color: #0066cc;
+            color: #2F5233;
             font-weight: bold;
         }
         
         .header .date {
             font-size: 12px;
-            color: #666;
+            color: #495057;
             margin: 3px 0;
         }
         
@@ -300,31 +310,21 @@ $htmlContent = @"
             margin-bottom: 15px;
         }
         
-        .day-title {
-            background: linear-gradient(135deg, #0066cc, #004499);
-            color: white;
-            padding: 6px 12px;
-            margin: 0 0 8px 0;
-            font-size: 14px;
-            border-radius: 4px;
-            text-align: center;
-        }
-        
         .schedule-table {
             width: 100%;
             border-collapse: collapse;
-            border: 2px solid #0066cc;
+            border: 2px solid #2F5233;
             font-size: 9px;
         }
         
         .schedule-table th {
-            background: linear-gradient(135deg, #0066cc, #004499);
+            background: #8FBC8F;
             color: white;
             padding: 8px 4px;
             text-align: center;
             font-weight: bold;
             font-size: 9px;
-            border: 1px solid #004499;
+            border: 1px solid #2F5233;
             line-height: 1.1;
         }
         
@@ -350,18 +350,25 @@ $htmlContent = @"
             height: 65px;
         }
         
+        .schedule-table tr:nth-child(even) td {
+            background-color: #f8f9fa;
+        }
+        
+        .schedule-table tr:nth-child(odd) td {
+            background-color: #ffffff;
+        }
+        
         .time-cell {
-            background-color: #f0f8ff;
             font-weight: bold;
             text-align: center;
-            color: #0066cc;
+            color: #2F5233;
             white-space: nowrap;
             font-size: 10px;
+            border-right: 2px solid #8FBC8F;
         }
         
         .session-cell {
-            background-color: #fff;
-            border-left: 2px solid #0066cc;
+            border-left: 2px solid #8FBC8F;
         }
         
         .session-title {
@@ -379,22 +386,28 @@ $htmlContent = @"
         }
         
         .session-level {
-            color: #0066cc;
+            color: #2F5233;
             font-weight: bold;
             font-size: 7px;
             margin-top: 2px;
             text-transform: uppercase;
+            background-color: #E8F5E8;
+            padding: 1px 4px;
+            border-radius: 2px;
+            display: inline-block;
+            border: 1px solid #8FBC8F;
         }
         
         .session-time {
-            color: #e65100;
+            color: #2F5233;
             font-weight: bold;
             font-size: 7px;
             margin-top: 2px;
-            background: #fff3e0;
+            background: #D4EDDA;
             padding: 1px 3px;
             border-radius: 2px;
             display: inline-block;
+            border: 1px solid #8FBC8F;
         }
         
         .session-block {
@@ -413,90 +426,92 @@ $htmlContent = @"
             background: #f8f9fa;
         }
         
+        .keynote-row td {
+            background: #D4EDDA !important;
+        }
+        
         .keynote-cell {
-            background: linear-gradient(135deg, #fff3e0, #ffe0b2);
-            border: 2px solid #ff9800;
+            border: 2px solid #2F5233;
             text-align: center;
             padding: 8px;
         }
         
         .keynote-title {
             font-weight: bold;
-            color: #e65100;
+            color: #2F5233;
             font-size: 10px;
             margin-bottom: 2px;
         }
         
         .keynote-speaker {
-            color: #bf360c;
+            color: #155724;
             font-style: italic;
             font-size: 8px;
         }
         
         .keynote-room {
-            color: #bf360c;
+            color: #2F5233;
             font-weight: bold;
             font-size: 8px;
             margin-top: 2px;
+        }
+        
+        .lunch-row {
+            background: #f8f9fa;
+        }
+        
+        .lunch-row td {
+            background: #E8F5E8 !important;
+        }
+        
+        .lunch-cell {
+            border: 2px solid #2F5233;
+            text-align: center;
+            padding: 8px;
+        }
+        
+        .lunch-title {
+            font-weight: bold;
+            color: #2F5233;
+            font-size: 10px;
+            margin-bottom: 2px;
+        }
+        
+        .lunch-room {
+            color: #2F5233;
+            font-weight: bold;
+            font-size: 8px;
         }
         
         .raffle-row {
             background: #f8f9fa;
         }
         
+        .raffle-row td {
+            background: #CCE5CC !important;
+        }
+        
         .raffle-cell {
-            background: linear-gradient(135deg, #e8f5e8, #c8e6c9);
-            border: 2px solid #4caf50;
+            border: 2px solid #2F5233;
             text-align: center;
             padding: 8px;
         }
         
         .raffle-title {
             font-weight: bold;
-            color: #2e7d32;
+            color: #2F5233;
             font-size: 10px;
             margin-bottom: 2px;
         }
         
         .raffle-room {
-            color: #2e7d32;
+            color: #2F5233;
             font-weight: bold;
             font-size: 8px;
         }
         
         .empty-cell {
-            background-color: #fafafa;
-        }
-        
-        .info-section {
-            background: linear-gradient(135deg, #e8f5e8, #c8e6c9);
-            border: 2px solid #4caf50;
-            border-radius: 8px;
-            padding: 10px;
-            margin: 15px 0;
-            text-align: center;
-        }
-        
-        .info-title {
-            font-weight: bold;
-            color: #2e7d32;
-            font-size: 12px;
-            margin-bottom: 5px;
-        }
-        
-        .info-text {
-            color: #388e3c;
-            font-size: 9px;
-            line-height: 1.2;
-        }
-        
-        .footer {
-            margin-top: 15px;
-            text-align: center;
-            font-size: 7px;
-            color: #666;
-            border-top: 1px solid #ddd;
-            padding-top: 8px;
+            /* Inherits alternating background from tr:nth-child rules */
         }
         
         @media print {
@@ -516,18 +531,20 @@ $htmlContent = @"
 </head>
 <body>
     <div class="header">
-        <h1>$EventName</h1>
-        <div class="date">Saturday, July 26, 2025</div>
-        <div style="font-size: 10px; margin-top: 3px;">
-            📍 Louisiana Tech Park • 🌐 www.sqlsatbr.com
+        <div class="header-content">
+            <h1>$EventName</h1>
+            <div class="date">Saturday, July 26, 2025</div>
+            <div style="font-size: 10px; margin-top: 3px;">
+                📍 LSU Business Education Complex • 🌐 www.sqlsatbr.com
+            </div>
+            <div style="font-size: 8px; margin-top: 3px; color: #495057;">
+                🎫 FREE Event • 📝 Registration: 8:00 AM • 🎁 Raffle: 3:45 PM
+            </div>
+            <div style="font-size: 7px; margin-top: 5px; color: #666;">
+                Schedule generated $(Get-Date -Format 'MMMM dd, yyyy') • For session abstracts and speaker bios, visit <strong>www.sqlsatbr.com</strong>
+            </div>
         </div>
-    </div>
-    
-    <div class="info-section">
-        <div class="info-title">🎯 Event Information</div>
-        <div class="info-text">
-            🎫 FREE Event • 🅿️ FREE Parking • 🍕 FREE Lunch at 12:20 PM • 📝 Registration: 8:00 AM • 🎁 Raffle: 3:45 PM
-        </div>
+        <img src="Images/SQL_2025.png" alt="SQL Saturday Baton Rouge 2025 Logo" class="header-logo">
     </div>
 "@
 
@@ -554,10 +571,6 @@ if ($mainDay) {
 
 # Add footer
 $htmlContent += @"
-    <div class="footer">
-        <p><strong>SQL Saturday Baton Rouge 2025</strong> • Schedule generated $(Get-Date -Format 'MMMM dd, yyyy')</p>
-        <p>For session abstracts and speaker bios, visit <strong>www.sqlsatbr.com</strong></p>
-    </div>
 </body>
 </html>
 "@
@@ -570,7 +583,7 @@ try {
     Write-Host "📄 File saved to: $fullPath" -ForegroundColor Gray
     Write-Host "`n📋 Print Instructions:" -ForegroundColor Cyan
     Write-Host "   1. Open the HTML file in a web browser" -ForegroundColor White
-    Write-Host "   2. Set printer to Legal size (8.5 x 14 inches)" -ForegroundColor White
+    Write-Host "   2. Set printer to Letter size (8.5 x 11 inches)" -ForegroundColor White
     Write-Host "   3. Set orientation to Landscape" -ForegroundColor White
     Write-Host "   4. Enable double-sided printing (front and back)" -ForegroundColor White
     Write-Host "   5. Page 1: First half of rooms, Page 2: Second half of rooms" -ForegroundColor White
