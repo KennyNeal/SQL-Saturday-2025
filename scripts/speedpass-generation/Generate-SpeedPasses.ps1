@@ -421,16 +421,10 @@ window.addEventListener("DOMContentLoaded", () => {
     $pdfPath = Join-Path $OutputFolder "$safeName.pdf"
     Set-Content -Path $htmlPath -Value $html -Encoding UTF8
 
-    Start-Process -FilePath msedge.exe -ArgumentList @(
-        "--headless=new",
-        "--print-to-pdf=`"$pdfPath`"",
-        "--no-margins",
-        "`"file:///$htmlPath`"",
-        "--disable-gpu",
-        "--disable-extensions",
-        "--no-pdf-header-footer"
-    ) -Wait
-
+    # Suppress Edge output by redirecting to null
+    $edgePath = "${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe"
+    $null = & $edgePath --headless=new --print-to-pdf="$pdfPath" --no-margins "file:///$htmlPath" --disable-gpu --disable-extensions --no-pdf-header-footer 2>&1
+    
     Write-Host "Generated SpeedPass for $fullName" -ForegroundColor Green
     Start-Sleep -Seconds 5  # Add this line to throttle PDF generation
     return $true
