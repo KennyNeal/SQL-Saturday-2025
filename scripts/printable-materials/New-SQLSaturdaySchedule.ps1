@@ -974,7 +974,11 @@ Write-Host "=== SQL Saturday Schedule Generator ===" -ForegroundColor Cyan
 Write-Host "📡 Fetching data from Sessionize API..." -ForegroundColor Green
 
 # Set default values for optional parameters
-if (-not $OutputPath) { $OutputPath = "Schedule.html" }
+if (-not $OutputPath) { 
+    # Default to assets/documents folder (relative to script location)
+    $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+    $OutputPath = Join-Path (Split-Path (Split-Path $scriptDir -Parent) -Parent) "assets\documents\Schedule.html"
+}
 if (-not $RoomPrefix) { $RoomPrefix = "" }
 
 try {

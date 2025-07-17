@@ -1,7 +1,7 @@
-# SpeedPass Generation Scripts
+# Printable Materials Generation Scripts
 
 ## Overview
-Scripts for creating personalized PDF SpeedPasses for event attendees.
+Scripts for creating printable materials for SQL Saturday events, including SpeedPasses, Stamp Games, and Schedules.
 
 ## Scripts
 
@@ -25,6 +25,38 @@ Scripts for creating personalized PDF SpeedPasses for event attendees.
 ```powershell
 .\Generate-SpeedPasses.ps1
 ```
+
+### `Generate-StampGame.ps1`
+**Purpose**: Create printable Stamp Game sheets with sponsor logos
+
+**Features**:
+- Customizable grid layout (default 3 columns)
+- Sponsor logo integration from designated folder
+- Center logo placement (SQL Saturday logo by default)
+- Additional logo placement options (End, Alphabetical, Beginning)
+- Landscape PDF format with two sheets per page
+- Black squares for grid padding
+- Dynamic vertical centering
+
+**Parameters**:
+- `-LogoFolder`: Path to sponsor logos folder
+- `-CenterLogo`: Path to center logo file
+- `-AdditionalLogos`: Array of additional logo paths
+- `-AdditionalLogoPlacement`: Placement strategy for additional logos
+- `-GridColumns`: Number of columns in grid (default: 3)
+
+**Output**: `Stamp-Game-2025.pdf` in assets/documents
+
+### `Generate-Schedule.ps1` & `New-SQLSaturdaySchedule.ps1`
+**Purpose**: Generate printable event schedules
+
+**Features**:
+- Session schedule formatting
+- Speaker information integration
+- Room and time slot organization
+- Printable PDF format
+
+**Output**: Schedule PDFs for event distribution
 
 ## SpeedPass Design
 
@@ -83,3 +115,19 @@ Uses stored procedure: `AttendeesGetUnPrintedOrders`
 - Test QR codes with barcode scanner
 - Verify sponsor logos display correctly
 - Check attendee data completeness
+
+## Usage Examples
+
+```powershell
+# Generate speedpasses for all unprinted attendees
+.\Generate-SpeedPasses.ps1
+
+# Generate stamp game with custom settings
+.\Generate-StampGame.ps1 -GridColumns 4 -AdditionalLogos @("C:\path\to\logo.png")
+
+# Generate stamp game with alphabetical logo placement
+.\Generate-StampGame.ps1 -AdditionalLogos @("C:\path\to\gon.png") -AdditionalLogoPlacement "Alphabetical"
+
+# Generate schedules
+.\Generate-Schedule.ps1
+```
