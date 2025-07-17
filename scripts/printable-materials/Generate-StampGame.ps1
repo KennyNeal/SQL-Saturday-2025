@@ -75,7 +75,7 @@ switch ($AdditionalLogoPlacement) {
         $logoFiles = $AdditionalLogos + $logoFiles
     }
     'Alphabetical' {
-        # Combine all logos and sort alphabetically
+        # Combine all logos and sort alphabetically by filename
         $allLogos = $logoFiles + $AdditionalLogos
         $logoFiles = $allLogos | Sort-Object { [System.IO.Path]::GetFileNameWithoutExtension($_) }
     }
@@ -99,14 +99,14 @@ $logoIndex = 0
 for ($i = 0; $i -lt $totalCells; $i++) {
     if ($i -eq $centerPosition) {
         # Place center logo
-        $finalLogos += $CenterLogo
+        $finalLogos += @{ path = $CenterLogo; isCenterLogo = $true }
     } elseif ($logoIndex -lt $logoFiles.Count) {
         # Place regular logos
-        $finalLogos += $logoFiles[$logoIndex]
+        $finalLogos += @{ path = $logoFiles[$logoIndex]; isCenterLogo = $false }
         $logoIndex++
     } else {
-        # Fill remaining cells with black squares
-        $finalLogos += "BLACK_SQUARE"
+        # Fill remaining cells with dark gray squares
+        $finalLogos += @{ path = "BLACK_SQUARE"; isCenterLogo = $false }
     }
 }
 
@@ -114,14 +114,14 @@ $logoFiles = $finalLogos
 
 # Preload sponsor logos as base64
 $sponsorLogos = @()
-foreach ($logoPath in $logoFiles) {
-    if ($logoPath -eq "BLACK_SQUARE") {
-        # Create black square data
-        $sponsorLogos += @{ base64 = ""; ext = ""; name = "BLACK_SQUARE"; isBlackSquare = $true }
+foreach ($logoItem in $logoFiles) {
+    if ($logoItem.path -eq "BLACK_SQUARE") {
+        # Create dark gray square data
+        $sponsorLogos += @{ base64 = ""; ext = ""; name = "BLACK_SQUARE"; isBlackSquare = $true; isCenterLogo = $false }
     } else {
-        $logoBase64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes($logoPath))
-        $ext = [System.IO.Path]::GetExtension($logoPath).Replace(".","")
-        $sponsorLogos += @{ base64 = $logoBase64; ext = $ext; name = [System.IO.Path]::GetFileNameWithoutExtension($logoPath); isBlackSquare = $false }
+        $logoBase64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes($logoItem.path))
+        $ext = [System.IO.Path]::GetExtension($logoItem.path).Replace(".","")
+        $sponsorLogos += @{ base64 = $logoBase64; ext = $ext; name = [System.IO.Path]::GetFileNameWithoutExtension($logoItem.path); isBlackSquare = $false; isCenterLogo = $logoItem.isCenterLogo }
     }
 }
 
@@ -165,8 +165,9 @@ body { font-family: Arial; margin: 0; }
   grid-gap: 0in; 
   width: fit-content;
 }
-.cell { width: 1.5in; height: 1.2in; border: 1px solid #333; display: flex; align-items: center; justify-content: center; background: #fff; }
-.logo-img { max-width: 1.4in; max-height: 1.1in; object-fit: contain; }
+.cell { width: 1.5in; height: 1.2in; border: 1px solid #333; display: flex; align-items: center; justify-content: center; background: #fff; flex-direction: column; }
+.logo-img { max-width: 1.4in; max-height: 0.9in; object-fit: contain; }
+.free-square-text { font-size: 8pt; font-weight: bold; color: #333; margin-top: 2px; text-align: center; }
 </style>
 </head><body>
 <div class="page">
@@ -183,7 +184,9 @@ body { font-family: Arial; margin: 0; }
 # Add logo cells for first copy
 foreach ($logo in $sponsorLogos) {
     if ($logo.isBlackSquare) {
-        $html += "<div class='cell' style='background: #000;'></div>"
+        $html += "<div class='cell' style='background: #555;'></div>"
+    } elseif ($logo.isCenterLogo) {
+        $html += "<div class='cell'><img class='logo-img' src='data:image/$($logo.ext);base64,$($logo.base64)' alt='$($logo.name)' /><div class='free-square-text'>FREE SQUARE</div></div>"
     } else {
         $html += "<div class='cell'><img class='logo-img' src='data:image/$($logo.ext);base64,$($logo.base64)' alt='$($logo.name)' /></div>"
     }
@@ -206,7 +209,9 @@ $html += @"
 # Add logo cells for second copy
 foreach ($logo in $sponsorLogos) {
     if ($logo.isBlackSquare) {
-        $html += "<div class='cell' style='background: #000;'></div>"
+        $html += "<div class='cell' style='background: #555;'></div>"
+    } elseif ($logo.isCenterLogo) {
+        $html += "<div class='cell'><img class='logo-img' src='data:image/$($logo.ext);base64,$($logo.base64)' alt='$($logo.name)' /><div class='free-square-text'>FREE SQUARE</div></div>"
     } else {
         $html += "<div class='cell'><img class='logo-img' src='data:image/$($logo.ext);base64,$($logo.base64)' alt='$($logo.name)' /></div>"
     }
