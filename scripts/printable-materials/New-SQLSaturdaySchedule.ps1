@@ -125,29 +125,35 @@ function Get-OptimalRoomDistribution {
     $avgCharWidth = 0.07  # Approximate inches per character in 8pt font
     $columnPadding = 0.3  # Padding and borders per column
     
-    # First pass: calculate all room widths and total width needed
-    $roomWidths = @()
+    # First pass: calculate all room widths and total width needed (optimized)
+    $roomWidths = [System.Collections.Generic.List[hashtable]]::new($rooms.Count)
     $totalWidth = 0
     
+    # Pre-compile regex patterns for better performance
+    $prefixRegex = if ($roomPrefix) { [regex]::new([regex]::Escape($roomPrefix)) } else { $null }
+    $parenthesesRegex = [regex]::new(' \(')
+    
     foreach ($room in $rooms) {
-        # Calculate display name (after removing prefix and formatting)
-        $displayName = $room.name -replace $roomPrefix, "" -replace " \(", "`n("
+        # Calculate display name (after removing prefix and formatting) - optimized regex usage
+        $displayName = $room.name
+        if ($prefixRegex) { $displayName = $prefixRegex.Replace($displayName, "", 1) }
+        $displayName = $parenthesesRegex.Replace($displayName, "`n(", 1)
         
         # Estimate column width needed for this room
         # Take the longest line after line breaks for width calculation
         $lines = $displayName -split "`n"
-        $maxLineLength = ($lines | ForEach-Object { $_.Length } | Measure-Object -Maximum).Maximum
+        $maxLineLength = ($lines | Measure-Object -Property Length -Maximum).Maximum
         $estimatedWidth = ($maxLineLength * $avgCharWidth) + $columnPadding
         
         # Ensure minimum width for readability
         $columnWidth = [Math]::Max($estimatedWidth, 1.2)
         
-        $roomWidths += @{
+        $roomWidths.Add(@{
             Room = $room
             Width = $columnWidth
             DisplayName = $displayName
             CharLength = $maxLineLength
-        }
+        })
         $totalWidth += $columnWidth
         
         Write-Host "   📏 Room '$($room.name)' → '$displayName' = $maxLineLength chars ≈ $($columnWidth.ToString('F1')) inches" -ForegroundColor Gray
@@ -169,7 +175,8 @@ function Get-OptimalRoomDistribution {
         $targetRoomsPerPage = [Math]::Ceiling($rooms.Count / $minPagesNeeded)
         Write-Host "🎯 Target: $targetRoomsPerPage rooms per page across $minPagesNeeded pages" -ForegroundColor Cyan
         
-        # Create balanced distribution
+        # Create balanced distribution (optimized)
+        $roomPages = [System.Collections.Generic.List[array]]::new($minPagesNeeded)
         for ($pageNum = 0; $pageNum -lt $minPagesNeeded; $pageNum++) {
             $startIndex = $pageNum * $targetRoomsPerPage
             $endIndex = [Math]::Min($startIndex + $targetRoomsPerPage - 1, $rooms.Count - 1)
@@ -178,7 +185,7 @@ function Get-OptimalRoomDistribution {
                 $pageRooms = $rooms[$startIndex..$endIndex]
                 $pageWidth = ($roomWidths[$startIndex..$endIndex] | Measure-Object -Property Width -Sum).Sum
                 
-                $roomPages += ,$pageRooms
+                $roomPages.Add($pageRooms)
                 Write-Host "   📄 Page $($pageNum + 1): $($pageRooms.Count) rooms, $($pageWidth.ToString('F1')) inches width" -ForegroundColor Green
                 Write-Host "      📋 Rooms: $($pageRooms.name -join ', ')" -ForegroundColor White
             }
@@ -230,7 +237,7 @@ function Get-TimeSlots {
     param($dayData)
     
     # Get time slots based on sessions that have multiple concurrent rooms or are plenum sessions
-    $mainTimeSlots = @()
+    $mainTimeSlots = [System.Collections.Generic.List[string]]::new()
     
     foreach ($slot in $dayData.timeSlots) {
         $regularSessions = $slot.rooms | Where-Object { 
@@ -257,14 +264,13 @@ function Get-TimeSlots {
         # 2. It has multiple regular sessions (2+ concurrent sessions for smaller events), OR
         # 3. It has any regular sessions (for days with fewer concurrent sessions like Friday)
         if ($plenumSessions.Count -gt 0 -or $regularSessions.Count -ge 2 -or ($regularSessions.Count -ge 1 -and $dayData.rooms.Count -le 3)) {
-            $mainTimeSlots += $slot.slotStart
+            $mainTimeSlots.Add($slot.slotStart)
         }
     }
     
-    # Remove duplicates and sort
-    $timeSlots = $mainTimeSlots | 
-        Select-Object -Unique | 
-        Sort-Object { [DateTime]::ParseExact($_, "HH:mm:ss", $null) }
+    # Remove duplicates and sort - convert to array and optimize sorting
+    $uniqueSlots = [System.Collections.Generic.HashSet[string]]::new($mainTimeSlots)
+    $timeSlots = [array]($uniqueSlots | Sort-Object { [DateTime]::ParseExact($_, "HH:mm:ss", $null) })
     
     Write-Host "📅 Detected time slots: $($timeSlots -join ', ')" -ForegroundColor Yellow
     Write-Host "💡 Lightning talk sessions will be grouped within these main time blocks" -ForegroundColor Cyan
@@ -447,44 +453,56 @@ function New-TimeSlotGrid {
         $IncludeHeader = $false
     )
     
-    $html = @"
-<div class="day-section">
-"@
-
+    # Use StringBuilder for efficient string building
+    $htmlBuilder = [System.Text.StringBuilder]::new(8192)
+    [void]$htmlBuilder.AppendLine('<div class="day-section">')
+    
     # Add header only if requested (first page of each day)
     if ($IncludeHeader) {
         $headerHtml = New-HeaderHtml -EventName $EventName -EventDate $EventDate -LocationName $LocationName -Website $Website -LogoPath $LogoPath -AppUrl $AppUrl -SpecialEvents $specialEvents
-        $html += $headerHtml
+        [void]$htmlBuilder.Append($headerHtml)
     }
 
     # Add day title if provided
     if ($dayTitle) {
-        $html += @"
-    <div class="day-title">$dayTitle</div>
-"@
+        [void]$htmlBuilder.AppendLine("    <div class='day-title'>$dayTitle</div>")
     }
 
-    $html += @"
+    [void]$htmlBuilder.AppendLine(@"
     <table class="schedule-table">
         <thead>
             <tr>
                 <th class="time-column">Time</th>
-"@
+"@)
 
-    # Use only the specified rooms
+    # Use only the specified rooms - optimize regex operations
+    $prefixRegex = if ($roomPrefix) { [regex]::new([regex]::Escape($roomPrefix)) } else { $null }
+    $parenthesesRegex = [regex]::new(' \(')
+    
     foreach ($room in $roomsToInclude) {
-        $roomName = $room.name -replace $roomPrefix, "" -replace " \(", "`n("
-        $html += "<th class='room-column'>$roomName</th>`n"
+        $roomName = $room.name
+        if ($prefixRegex) { $roomName = $prefixRegex.Replace($roomName, "", 1) }
+        $roomName = $parenthesesRegex.Replace($roomName, "`n(", 1)
+        [void]$htmlBuilder.AppendLine("<th class='room-column'>$roomName</th>")
     }
     
-    $html += @"
+    [void]$htmlBuilder.AppendLine(@"
             </tr>
         </thead>
         <tbody>
-"@
+"@)
+
+    # Pre-compile common regex patterns for session processing
+    $jambalayaRegex = [regex]::new("jambalaya", [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
+    $timeSlotDateTimes = @{}
+    
+    # Pre-parse all time slots for better performance
+    foreach ($slot in $timeSlots) {
+        $timeSlotDateTimes[$slot] = [DateTime]::ParseExact($slot, "HH:mm:ss", $null)
+    }
 
     foreach ($timeSlot in $timeSlots) {
-        $time = ([DateTime]::ParseExact($timeSlot, "HH:mm:ss", $null)).ToString("h:mm tt")
+        $time = $timeSlotDateTimes[$timeSlot].ToString("h:mm tt")
         
         # Check if this is a special event time
         $isSpecialEvent = $false
@@ -498,9 +516,9 @@ function New-TimeSlotGrid {
             $plenumSession = $currentSlot.rooms | Where-Object { $_.session.isPlenumSession -eq $true } | Select-Object -First 1
             if ($plenumSession -and $plenumSession.session) {
                 $title = $plenumSession.session.title
-                $location = $plenumSession.name -replace $roomPrefix, ""
+                $location = if ($prefixRegex) { $prefixRegex.Replace($plenumSession.name, "", 1) } else { $plenumSession.name }
                 
-                # Determine event type based on title
+                # Determine event type based on title - use optimized matching
                 if ($title -match "keynote|opening|welcome") {
                     $specialEventType = "keynote"
                     $specialEventTitle = "🎤 $title"
@@ -508,8 +526,7 @@ function New-TimeSlotGrid {
                 }
                 elseif ($title -match "lunch|break|meal") {
                     $specialEventType = "lunch"
-                    $specialEventTitle = "🍽️ LUNCH"
-                    if ($title -match "jambalaya") { $specialEventTitle = "🍲 JAMBALAYA LUNCH" }
+                    $specialEventTitle = if ($jambalayaRegex.IsMatch($title)) { "🍲 JAMBALAYA LUNCH" } else { "🍽️ LUNCH" }
                     $isSpecialEvent = $true
                 }
                 elseif ($title -match "raffle|closing|prize|giveaway") {
@@ -529,29 +546,34 @@ function New-TimeSlotGrid {
         
         # Handle special events
         if ($isSpecialEvent) {
-            $html += "<tr class='$specialEventType-row'>`n<td class='time-cell'>$time</td>`n"
+            [void]$htmlBuilder.AppendLine("<tr class='$specialEventType-row'>")
+            [void]$htmlBuilder.AppendLine("<td class='time-cell'>$time</td>")
             $colspan = $roomsToInclude.Count
-            $html += "<td class='$specialEventType-cell' colspan='$colspan'>"
-            $html += "<div class='$specialEventType-title'>$specialEventTitle</div>`n"
+            [void]$htmlBuilder.AppendLine("<td class='$specialEventType-cell' colspan='$colspan'>")
+            [void]$htmlBuilder.AppendLine("<div class='$specialEventType-title'>$specialEventTitle</div>")
             if ($specialEventLocation) {
-                $html += "<div class='$specialEventType-room'>📍 $specialEventLocation</div>`n"
+                [void]$htmlBuilder.AppendLine("<div class='$specialEventType-room'>📍 $specialEventLocation</div>")
             }
-            $html += "</td>`n"
-            $html += "</tr>`n"
+            [void]$htmlBuilder.AppendLine("</td>")
+            [void]$htmlBuilder.AppendLine("</tr>")
             continue
         }
         
         # Regular session time slot - find all sessions that fall within this time window
-        $html += "<tr>`n<td class='time-cell'>$time</td>`n"
+        [void]$htmlBuilder.AppendLine("<tr>")
+        [void]$htmlBuilder.AppendLine("<td class='time-cell'>$time</td>")
         
         # Calculate time window for this slot (e.g., 8:30-9:40, 9:40-10:45, etc.)
-        $currentTime = [DateTime]::ParseExact($timeSlot, "HH:mm:ss", $null)
+        $currentTime = $timeSlotDateTimes[$timeSlot]
         $nextTimeSlotIndex = ([array]::IndexOf($timeSlots, $timeSlot) + 1)
-        $nextTimeSlot = if ($nextTimeSlotIndex -lt $timeSlots.Count) { $timeSlots[$nextTimeSlotIndex] } else { $null }
-        $nextTime = if ($nextTimeSlot) { [DateTime]::ParseExact($nextTimeSlot, "HH:mm:ss", $null) } else { $currentTime.AddHours(2) }
+        $nextTime = if ($nextTimeSlotIndex -lt $timeSlots.Count) { 
+            $timeSlotDateTimes[$timeSlots[$nextTimeSlotIndex]]
+        } else { 
+            $currentTime.AddHours(2) 
+        }
         
         foreach ($room in $roomsToInclude) {
-            $sessionsInRoom = @()
+            $sessionsInRoom = [System.Collections.Generic.List[hashtable]]::new()
             
             # Find all sessions for this room that start within this time window
             foreach ($slot in $dayData.timeSlots) {
@@ -569,18 +591,18 @@ function New-TimeSlotGrid {
                             ([DateTime]::ParseExact($slot.slotEnd, "HH:mm:ss", $null) - [DateTime]::ParseExact($slot.slotStart, "HH:mm:ss", $null)).TotalMinutes 
                         } else { 60 }
                         
-                        $sessionsInRoom += @{
+                        $sessionsInRoom.Add(@{
                             Session = $session
                             StartTime = $startTime
                             EndTime = $endTime
                             Duration = $duration
-                        }
+                        })
                     }
                 }
             }
             
             if ($sessionsInRoom.Count -gt 0) {
-                $html += "<td class='session-cell'>"
+                [void]$htmlBuilder.AppendLine("<td class='session-cell'>")
                 
                 foreach ($sessionInfo in $sessionsInRoom) {
                     $session = $sessionInfo.Session
@@ -616,56 +638,56 @@ function New-TimeSlotGrid {
                     
                     # Add session block if multiple sessions
                     if ($sessionsInRoom.Count -gt 1) {
-                        $html += "<div class='session-block'>"
+                        [void]$htmlBuilder.AppendLine("<div class='session-block'>")
                     }
                     
-                    $html += "<div class='session-title'>$title</div>`n"
+                    [void]$htmlBuilder.AppendLine("<div class='session-title'>$title</div>")
                     if ($speakers) {
-                        $html += "<div class='session-speaker'>$speakers</div>`n"
+                        [void]$htmlBuilder.AppendLine("<div class='session-speaker'>$speakers</div>")
                     }
                     
                     # Show level for regular sessions (not lightning talks or keynotes)
                     if ($level) {
-                        $html += "<div class='session-level'>$level</div>`n"
+                        [void]$htmlBuilder.AppendLine("<div class='session-level'>$level</div>")
                     }
                     
                     # Show track information if available and different from room name
                     if ($track) {
-                        $html += "<div class='session-track'>Track: $track</div>`n"
+                        [void]$htmlBuilder.AppendLine("<div class='session-track'>Track: $track</div>")
                     }
                     
                     # Show time info for shorter sessions or multiple sessions
                     if ($sessionInfo.Duration -lt 60 -or $sessionsInRoom.Count -gt 1) {
                         if ($sessionInfo.EndTime) {
-                            $html += "<div class='session-time'>$($sessionInfo.StartTime) - $($sessionInfo.EndTime)</div>`n"
+                            [void]$htmlBuilder.AppendLine("<div class='session-time'>$($sessionInfo.StartTime) - $($sessionInfo.EndTime)</div>")
                         } else {
-                            $html += "<div class='session-time'>$($sessionInfo.StartTime)</div>`n"
+                            [void]$htmlBuilder.AppendLine("<div class='session-time'>$($sessionInfo.StartTime)</div>")
                         }
                     }
                     
                     if ($sessionsInRoom.Count -gt 1) {
-                        $html += "</div>"
+                        [void]$htmlBuilder.AppendLine("</div>")
                     }
                 }
                 
-                $html += "</td>`n"
+                [void]$htmlBuilder.AppendLine("</td>")
             } else {
-                $html += "<td class='empty-cell'></td>`n"
+                [void]$htmlBuilder.AppendLine("<td class='empty-cell'></td>")
             }
         }
-        $html += "</tr>`n"
+        [void]$htmlBuilder.AppendLine("</tr>")
     }
     
-    $html += @"
+    [void]$htmlBuilder.AppendLine(@"
         </tbody>
     </table>
     <div style="text-align: center; margin-top: 10px; font-size: 8px; color: #666; font-style: italic;">
         ➤ Continued on other side
     </div>
 </div>
-"@
+"@)
     
-    return $html
+    return $htmlBuilder.ToString()
 }
 
 # Function to generate CSS with configurable colors and page size
@@ -813,7 +835,7 @@ function New-ScheduleCSS {
             vertical-align: top;
             font-size: 9px;
             line-height: 1.1;
-            height: 58px;
+            height: 80px;
         }
         
         .schedule-table tr:nth-child(even) td {
@@ -962,11 +984,11 @@ function New-ScheduleCSS {
             }
             
             .schedule-table td {
-                height: 54px;
+                height: 75px;
             }
             
             .keynote-cell, .lunch-cell, .raffle-cell {
-                height: 36px;
+                height: 50px;
             }
         }
 "@
@@ -974,29 +996,49 @@ function New-ScheduleCSS {
 
 # Main execution
 Write-Host "=== SQL Saturday Schedule Generator ===" -ForegroundColor Cyan
+
+# Input validation
+if (-not $ApiUrl -or $ApiUrl -notmatch '^https?://') {
+    Write-Error "❌ ApiUrl must be a valid HTTP/HTTPS URL"
+    return
+}
+
+if ($PrimaryColor -notmatch '^#[0-9A-Fa-f]{6}$') {
+    Write-Error "❌ PrimaryColor must be a valid hex color (e.g., #2F5233)"
+    return
+}
+
+if ($SecondaryColor -notmatch '^#[0-9A-Fa-f]{6}$') {
+    Write-Error "❌ SecondaryColor must be a valid hex color (e.g., #8FBC8F)"
+    return
+}
+
 Write-Host "📡 Fetching data from Sessionize API..." -ForegroundColor Green
 
-# Set default values for optional parameters
+# Set default values for optional parameters - optimized path resolution
 if (-not $OutputPath) { 
-    # Default to assets/documents folder (relative to script location)
-    $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-    $OutputPath = Join-Path (Split-Path (Split-Path $scriptDir -Parent) -Parent) "assets\documents\Schedule.html"
+    # Default to assets/documents folder (relative to script location) - cache script directory
+    $script:scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+    $projectRoot = Split-Path (Split-Path $script:scriptDir -Parent) -Parent
+    $OutputPath = Join-Path $projectRoot "assets\documents\Schedule.html"
 }
 if (-not $RoomPrefix) { $RoomPrefix = "" }
 
-# Handle LogoPath - support both relative and absolute paths
+# Handle LogoPath - support both relative and absolute paths - optimized with early returns
 if ($LogoPath) {
     if ([System.IO.Path]::IsPathRooted($LogoPath)) {
         # LogoPath is already an absolute path - use as is
         $resolvedLogoPath = $LogoPath
     } else {
         # LogoPath is relative - resolve relative to script location or current directory
-        $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-        $projectRoot = Split-Path (Split-Path $scriptDir -Parent) -Parent
+        if (-not $script:scriptDir) {
+            $script:scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+        }
+        $projectRoot = Split-Path (Split-Path $script:scriptDir -Parent) -Parent
         
         # Try relative to project root first (common case for assets/images/logo.png)
         $projectRelativePath = Join-Path $projectRoot $LogoPath
-        if (Test-Path $projectRelativePath) {
+        if (Test-Path $projectRelativePath -PathType Leaf) {
             $resolvedLogoPath = $projectRelativePath
         } else {
             # Fall back to current directory
@@ -1005,7 +1047,7 @@ if ($LogoPath) {
     }
     
     # Verify the logo file exists
-    if (-not (Test-Path $resolvedLogoPath)) {
+    if (-not (Test-Path $resolvedLogoPath -PathType Leaf)) {
         Write-Warning "Logo file not found at: $resolvedLogoPath"
         Write-Host "   The schedule will be generated without a logo." -ForegroundColor Yellow
         $LogoPath = $null
@@ -1053,7 +1095,7 @@ if ($daysToProcess.Count -eq 0) {
 Write-Host "🔍 Analyzing schedule structure..." -ForegroundColor Cyan
 
 # Process each day individually
-$allDayPages = @()
+$allDayPages = [System.Collections.Generic.List[string]]::new()
 foreach ($currentDay in $daysToProcess) {
     $dayName = ([DateTime]$currentDay.date).ToString("dddd, MMMM dd, yyyy")
     
@@ -1062,9 +1104,9 @@ foreach ($currentDay in $daysToProcess) {
     $timeSlots = Get-TimeSlots -dayData $currentDay
     $specialEvents = Get-SpecialEvents -dayData $currentDay
     
-    # Get all rooms for this day (excluding service rooms like Atrium)
+    # Get all rooms for this day (excluding service rooms like Atrium) - optimized filtering
     $allRooms = $currentDay.rooms | Where-Object { 
-        $_.name -ne "Atrium" -and 
+        $_.name -notin @("Atrium") -and 
         $_.name -notmatch "Registration|Check.?in|Lobby" 
     } | Sort-Object name
     
@@ -1091,7 +1133,7 @@ foreach ($currentDay in $daysToProcess) {
         $pageTitle = if ($EventDateFilter -or -not $isFirstPage) { $null } else { $dayName }
         
         $pageHtml = New-TimeSlotGrid -dayData $currentDay -dayTitle $pageTitle -roomsToInclude $currentPageRooms -timeSlots $timeSlots -specialEvents $specialEvents -roomPrefix $RoomPrefix -EventName $EventName -EventDate $EventDate -LocationName $LocationName -Website $Website -LogoPath $LogoPath -AppUrl $AppUrl -IncludeHeader $isFirstPage
-        $allDayPages += $pageHtml
+        $allDayPages.Add($pageHtml)
         
         # Add blank page after last page if we have an odd number of total pages (for double-sided printing alignment)
         if ($isLastPage -and $roomPages.Count % 2 -eq 1) {
@@ -1103,7 +1145,7 @@ foreach ($currentDay in $daysToProcess) {
     </div>
 </div>
 "@
-            $allDayPages += $blankPageHtml
+            $allDayPages.Add($blankPageHtml)
             Write-Host "   📄 Added blank page for double-sided printing alignment" -ForegroundColor Gray
         }
     }
@@ -1114,8 +1156,9 @@ Write-Host "✅ Schedule analysis complete! Generated $($allDayPages.Count) page
 # Generate CSS with custom colors and page size
 $css = New-ScheduleCSS -PageSize $PageSize -Orientation $Orientation -PrimaryColor $PrimaryColor -SecondaryColor $SecondaryColor
 
-# Generate HTML content
-$htmlContent = @"
+# Generate HTML content using StringBuilder for better performance
+$contentBuilder = [System.Text.StringBuilder]::new(32768)
+[void]$contentBuilder.AppendLine(@"
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1127,18 +1170,20 @@ $css
     </style>
 </head>
 <body>
-"@
+"@)
 
 # Add all processed day pages
 foreach ($pageHtml in $allDayPages) {
-    $htmlContent += $pageHtml
+    [void]$contentBuilder.Append($pageHtml)
 }
 
 # Add footer
-$htmlContent += @"
+[void]$contentBuilder.AppendLine(@"
 </body>
 </html>
-"@
+"@)
+
+$htmlContent = $contentBuilder.ToString()
 
 # Write the HTML file
 try {
