@@ -1,23 +1,59 @@
-# SQL Saturday Attendee Management
+# SQL Saturday Event Management System
 
-This repository contains scripts and database objects for importing, managing, and printing SQL Saturday attendee data from Eventbrite.
+A comprehensive PowerShell-based system for managing SQL Saturday events, from attendee registration to day-of-event operations.
 
-## Features
+## 🎯 What This System Does
 
-- PowerShell script to securely fetch attendee data from Eventbrite using SecretManagement
-- SQL Server stored procedures and tables for attendee management
-- Automated import and print tracking
+- **Attendee Management**: Import attendees from EventBrite, track registration data
+- **SpeedPass Generation**: Create personalized PDF passes with QR codes for quick check-in
+- **Email Communications**: Send SpeedPasses and volunteer notifications to attendees
+- **Schedule Management**: Generate printable schedules from Sessionize API data
+- **Database Operations**: Manage attendee data with SQL Server stored procedures
 
-## Inspiration & Database Design
+## 📁 Project Structure
 
-The database design and much of the workflow were inspired by [Jeff Taylor's SpeedPass blog post](https://www.jefftaylor.io/post/speedpass).  
-Special thanks to Jeff for sharing his approach and schema!
+```
+├── scripts/
+│   ├── attendee-management/     # EventBrite import and attendee processing
+│   ├── email-system/           # Email communications and notifications  
+│   ├── speedpass-generation/   # PDF SpeedPass creation and management
+│   ├── schedule-management/    # Schedule generation from Sessionize
+│   └── database-deployment/    # Database schema and stored procedure deployment
+├── database/
+│   └── sql-project/           # SQL Server database project files
+├── assets/
+│   ├── images/                # Event logos, sponsor images
+│   ├── templates/             # Email and document templates
+│   └── documents/             # Sponsorship docs, checklists
+├── output/
+│   ├── speedpasses/           # Generated SpeedPass PDFs
+│   └── schedules/             # Generated schedule documents
+├── config/
+│   └── settings/              # Configuration files and examples
+└── docs/
+    ├── setup-guide.md         # Getting started instructions
+    ├── database-guide.md      # Database setup and management
+    └── deployment-guide.md    # Production deployment instructions
+```
 
-## Usage
+## 🚀 Quick Start
 
-1. Store your Eventbrite API token securely using PowerShell SecretManagement.
-2. Run the PowerShell script to import attendees.
-3. Use the provided stored procedures to manage attendee printing and tracking.
+1. **Prerequisites**: PowerShell 7+, SQL Server, Required PowerShell modules
+2. **Database Setup**: Deploy database schema using scripts in `scripts/database-deployment/`
+3. **Configuration**: Set up API keys and connection strings
+4. **Import Attendees**: Run EventBrite import script
+5. **Generate SpeedPasses**: Create and email SpeedPasses to attendees
+
+## 📖 Detailed Documentation
+
+- [Setup Guide](docs/setup-guide.md) - Complete installation and configuration
+- [Database Guide](docs/database-guide.md) - Database schema and stored procedures  
+- [Deployment Guide](docs/deployment-guide.md) - Production deployment checklist
+
+## 🤝 Contributing
+
+This project was inspired by [Jeff Taylor's SpeedPass approach](https://www.jefftaylor.io/post/speedpass). 
+Thanks to the SQL Saturday community for sharing knowledge and best practices!
 
 ## Requirements
 
