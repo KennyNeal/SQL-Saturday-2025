@@ -86,4 +86,4 @@ foreach ($a in $attendees) {
 }
 
 $connection.Close()
-Write-Host "Attendees table reloaded from Eventbrite."
+Write-Host "Attendees table reloaded from Eventbrite. Count: $($attendees.Count)"

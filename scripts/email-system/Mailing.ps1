@@ -127,17 +127,17 @@ if (-not (Test-Path $OutputFolder)) {
 $cred = Import-Clixml -Path $CredPath
 $from = $cred.UserName
 
-Write-Host "=== SQL Saturday Email Sender ===" -ForegroundColor Cyan
+Write-Host "SQL Saturday Email Sender"
 if ($WhatIfPreference) {
-    Write-Host "🔍 WHATIF MODE: No emails will be sent, no database changes will be made" -ForegroundColor Yellow
+    Write-Host "WHATIF MODE: No emails will be sent, no database changes will be made"
 }
-Write-Host "📁 Output Folder: $OutputFolder" -ForegroundColor Gray
-Write-Host "📧 From: $from" -ForegroundColor Gray
-Write-Host "🎛️  Banner Enabled: $ShowBanner" -ForegroundColor Gray
-Write-Host "📬 Email Type: $EmailType" -ForegroundColor Gray
+Write-Host "Output Folder: $OutputFolder"
+Write-Host "From: $from"
+Write-Host "Banner Enabled: $ShowBanner"
+Write-Host "Email Type: $EmailType"
 
 # FETCH ATTENDEE EMAILS
-Write-Host "`n📊 Fetching attendees from database..." -ForegroundColor Green
+Write-Host "`nFetching attendees from database..."
 
 try {
     $connection = New-Object System.Data.SqlClient.SqlConnection $ConnectionString
@@ -158,27 +158,27 @@ try {
         }
     }
     $connection.Close()
-    Write-Host "✅ Found $($attendees.Count) attendees to process" -ForegroundColor Green
+    Write-Host "Found $($attendees.Count) attendees to process"
     if ($attendees.Count -eq 0) {
-        Write-Host "ℹ️  No attendees found. Exiting." -ForegroundColor Yellow
+        Write-Host "No attendees found. Exiting."
         return
     }
 } catch {
-    Write-Error "❌ Database error: $_"
+    Write-Error "Database error: $_"
     return
 }
 
 # After fetching attendees, filter for test mode
 if ($TestEmail -and $TestEmail -ne "") {
     $attendees = $attendees | Where-Object { $_.Email -eq $TestEmail }
-    Write-Host "✉️  TEST MODE: Only sending to $TestEmail" -ForegroundColor Yellow
+    Write-Host "TEST MODE: Only sending to $TestEmail"
 }
 
 # Validate PDF files and create processing summary
 $validAttendees = @()
 $missingPdfs = @()
 
-Write-Host "`n🔍 Validating PDF files..." -ForegroundColor Green
+Write-Host "`nValidating PDF files..."
 
 foreach ($a in $attendees) {
     $nameLastFirst = "$($a.LastName), $($a.FirstName)"
@@ -197,34 +197,34 @@ foreach ($a in $attendees) {
     }
 }
 
-Write-Host "✅ Valid PDFs found: $($validAttendees.Count)" -ForegroundColor Green
+Write-Host "Valid PDFs found: $($validAttendees.Count)"
 if ($missingPdfs.Count -gt 0) {
-    Write-Host "⚠️  Missing PDFs: $($missingPdfs.Count)" -ForegroundColor Yellow
+    Write-Host "Missing PDFs: $($missingPdfs.Count)"
 }
 
 if ($WhatIfPreference) {
-    Write-Host "`n📋 PREVIEW - Emails that would be sent:" -ForegroundColor Cyan
+    Write-Host "`nPREVIEW - Emails that would be sent:"
     $validAttendees | ForEach-Object { 
-        Write-Host "  📧 $($_.Attendee.Email) ← $($_.SafeName).pdf" -ForegroundColor White
+        Write-Host "  $($_.Attendee.Email) <- $($_.SafeName).pdf"
     }
     
     if ($missingPdfs.Count -gt 0) {
-        Write-Host "`n⚠️  PREVIEW - Attendees that would be skipped (missing PDFs):" -ForegroundColor Yellow
-        $missingPdfs | ForEach-Object { Write-Host "  ❌ $_" -ForegroundColor Red }
+        Write-Host "`nPREVIEW - Attendees that would be skipped (missing PDFs):"
+        $missingPdfs | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
     }
     
-    Write-Host "`n📊 SUMMARY:" -ForegroundColor Cyan
-    Write-Host "  📧 Emails to send: $($validAttendees.Count)" -ForegroundColor White
-    Write-Host "  ⚠️  Skipped (no PDF): $($missingPdfs.Count)" -ForegroundColor White
-    Write-Host "  📂 Output folder: $OutputFolder" -ForegroundColor Gray
-    Write-Host "`nTo actually send emails, run without -WhatIf parameter" -ForegroundColor Yellow
+    Write-Host "`nSUMMARY:"
+    Write-Host "  Emails to send: $($validAttendees.Count)"
+    Write-Host "  Skipped (no PDF): $($missingPdfs.Count)"
+    Write-Host "  Output folder: $OutputFolder"
+    Write-Host "`nTo actually send emails, run without -WhatIf parameter"
     return
 }
 
 # SEND EMAILS
 if ($validAttendees.Count -gt 0) {
-    Write-Host "`n📧 Starting email send process..." -ForegroundColor Green
-    Write-Host "📦 Processing in batches of $BatchSize" -ForegroundColor Gray
+    Write-Host "`nStarting email send process..."
+    Write-Host "Processing in batches of $BatchSize"
     
     $successCount = 0
     $errorCount = 0
@@ -246,7 +246,7 @@ if ($validAttendees.Count -gt 0) {
             $markConn.Close()
             return $true
         } catch {
-            Write-Host "  ⚠️  Database logging failed for $Barcode : $_" -ForegroundColor Yellow
+            Write-Host "  Database logging failed for $Barcode : $_"
             return $false
         }
     }
@@ -267,11 +267,11 @@ if ($validAttendees.Count -gt 0) {
             $reader = $batchCmd.ExecuteReader()
             if ($reader.Read()) {
                 $message = $reader["Message"]
-                Write-Host "  📝 Batch update: $message" -ForegroundColor Gray
+                Write-Host "  Batch update: $message"
             }
             $batchConn.Close()
         } catch {
-            Write-Host "  ⚠️  Batch database logging failed: $_" -ForegroundColor Yellow
+            Write-Host "  Batch database logging failed: $_"
         }
     }
     
@@ -285,7 +285,7 @@ if ($validAttendees.Count -gt 0) {
         $totalBatches = [Math]::Ceiling($validAttendees.Count / $BatchSize)
         $batchEmailedBarcodes = @()
         
-        Write-Host "`n📦 Processing batch $batchNumber of $totalBatches ($($batch.Count) emails)..." -ForegroundColor Cyan
+        Write-Host "`nProcessing batch $batchNumber of $totalBatches ($($batch.Count) emails)..."
         
         foreach ($item in $batch) {
             $a = $item.Attendee
@@ -306,7 +306,7 @@ if ($validAttendees.Count -gt 0) {
                         -SmtpServer $smtp -Port $port -UseSsl -Credential $cred -BodyAsHtml -WarningAction SilentlyContinue
                 }
                 
-                Write-Host "✅ Sent: $($item.SafeName).pdf ➝ $($a.Email)" -ForegroundColor Green
+                Write-Host "Sent: $($item.SafeName).pdf -> $($a.Email)"
                 
                 # Add to batch for database logging
                 $batchEmailedBarcodes += $a.Barcode
@@ -315,7 +315,7 @@ if ($validAttendees.Count -gt 0) {
                 
             } catch {
                 $errorMessage = "Error sending to $($a.Email): $_"
-                Write-Host "❌ $errorMessage" -ForegroundColor Red
+                Write-Host "ERROR: $errorMessage" -ForegroundColor Red
                 $errorLog += $errorMessage
                 $errorCount++
             }
@@ -333,28 +333,28 @@ if ($validAttendees.Count -gt 0) {
         
         # Longer delay between batches
         if ($i + $BatchSize -lt $validAttendees.Count) {
-            Write-Host "⏳ Waiting before next batch..." -ForegroundColor Gray
+            Write-Host "Waiting before next batch..."
             Start-Sleep -Seconds ($DelaySeconds * 2)
         }
     }
     
     # Final summary
-    Write-Host "`n📊 FINAL SUMMARY:" -ForegroundColor Cyan
-    Write-Host "✅ Successfully sent: $successCount emails" -ForegroundColor Green
-    Write-Host "📝 Database records updated: $($emailedBarcodes.Count)" -ForegroundColor Green
-    Write-Host "❌ Failed to send: $errorCount emails" -ForegroundColor Red
-    Write-Host "⚠️  Skipped (no PDF): $skippedCount attendees" -ForegroundColor Yellow
+    Write-Host "`nFINAL SUMMARY:"
+    Write-Host "Successfully sent: $successCount emails"
+    Write-Host "Database records updated: $($emailedBarcodes.Count)"
+    Write-Host "Failed to send: $errorCount emails" -ForegroundColor Red
+    Write-Host "Skipped (no PDF): $skippedCount attendees"
     
     # Write error log and skipped list to files
     if ($errorLog.Count -gt 0) {
         $errorLogPath = Join-Path $OutputFolder "send_errors.txt"
         $errorLog | Out-File -FilePath $errorLogPath -Encoding UTF8
-        Write-Host "📄 Error log written to: $errorLogPath" -ForegroundColor Gray
+        Write-Host "Error log written to: $errorLogPath"
     }
     
     if ($missingPdfs.Count -gt 0) {
         $skippedLogPath = Join-Path $OutputFolder "skipped.txt"
         $missingPdfs | Out-File -FilePath $skippedLogPath -Encoding UTF8
-        Write-Host "📄 Skipped list written to: $skippedLogPath" -ForegroundColor Gray
+        Write-Host "Skipped list written to: $skippedLogPath"
     }
 }

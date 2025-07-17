@@ -271,6 +271,6 @@ window.addEventListener("DOMContentLoaded", () => {
     "--no-pdf-header-footer"
   ) -Wait
 
-  Write-Host "PDF generated for $fullName`: $pdfPath"
+  Write-Host "Generated SpeedPass for $fullName"
   Start-Sleep -Seconds 5  # Add this line to throttle PDF generation
 }

@@ -27,23 +27,23 @@ $storedProcs = @(
 $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
 $procPath = Join-Path $scriptPath "Database\DatabaseProjectSQLSaturday\dbo\StoredProcedures"
 
-Write-Host "=== SQL Saturday Stored Procedure Deployment ===" -ForegroundColor Cyan
+Write-Host "SQL Saturday Stored Procedure Deployment"
 
 if ($WhatIf) {
-    Write-Host "🔍 WHATIF MODE: Scripts will be validated but not executed" -ForegroundColor Yellow
+    Write-Host "WHATIF MODE: Scripts will be validated but not executed"
 }
 
-Write-Host "📁 Procedure Path: $procPath" -ForegroundColor Gray
-Write-Host "🔗 Connection: $($ConnectionString -replace 'Password=[^;]*', 'Password=***')" -ForegroundColor Gray
+Write-Host "Procedure Path: $procPath"
+Write-Host "Connection: $($ConnectionString -replace 'Password=[^;]*', 'Password=***')"
 
 foreach ($proc in $storedProcs) {
     $filePath = Join-Path $procPath $proc.File
     
-    Write-Host "`n📄 Processing: $($proc.Name)" -ForegroundColor Green
-    Write-Host "   $($proc.Description)" -ForegroundColor Gray
+    Write-Host "`nProcessing: $($proc.Name)"
+    Write-Host "   $($proc.Description)"
     
     if (-not (Test-Path $filePath)) {
-        Write-Host "❌ File not found: $filePath" -ForegroundColor Red
+        Write-Host "ERROR: File not found: $filePath" -ForegroundColor Red
         continue
     }
     
@@ -54,8 +54,8 @@ foreach ($proc in $storedProcs) {
         $sql = $sql -replace '(?m)^\s*GO\s*$', ''
         
         if ($WhatIf) {
-            Write-Host "✅ SQL file validated: $($proc.File)" -ForegroundColor Green
-            Write-Host "   Would execute: DROP/CREATE PROCEDURE dbo.$($proc.Name)" -ForegroundColor Gray
+            Write-Host "SQL file validated: $($proc.File)"
+            Write-Host "   Would execute: DROP/CREATE PROCEDURE dbo.$($proc.Name)"
         } else {
             $connection = New-Object System.Data.SqlClient.SqlConnection $ConnectionString
             $connection.Open()
@@ -72,25 +72,25 @@ foreach ($proc in $storedProcs) {
                 $createCmd.CommandText = $sql
                 $createCmd.ExecuteNonQuery() | Out-Null
                 
-                Write-Host "✅ Successfully deployed: dbo.$($proc.Name)" -ForegroundColor Green
+                Write-Host "Successfully deployed: dbo.$($proc.Name)"
                 
             } catch {
-                Write-Host "❌ Error executing SQL for $($proc.Name): $_" -ForegroundColor Red
-                Write-Host "   SQL Preview: $($sql.Substring(0, [Math]::Min(100, $sql.Length)))..." -ForegroundColor Gray
+                Write-Host "ERROR: Error executing SQL for $($proc.Name): $_" -ForegroundColor Red
+                Write-Host "   SQL Preview: $($sql.Substring(0, [Math]::Min(100, $sql.Length)))..."
             } finally {
                 $connection.Close()
             }
         }
         
     } catch {
-        Write-Host "❌ Error deploying $($proc.Name): $_" -ForegroundColor Red
+        Write-Host "ERROR: Error deploying $($proc.Name): $_" -ForegroundColor Red
     }
 }
 
 if ($WhatIf) {
-    Write-Host "`n📋 PREVIEW COMPLETE" -ForegroundColor Cyan
-    Write-Host "To actually deploy the procedures, run without -WhatIf parameter" -ForegroundColor Yellow
+    Write-Host "`nPREVIEW COMPLETE"
+    Write-Host "To actually deploy the procedures, run without -WhatIf parameter"
 } else {
-    Write-Host "`n✅ DEPLOYMENT COMPLETE" -ForegroundColor Cyan
-    Write-Host "The new stored procedures are ready for use by the email script" -ForegroundColor Green
+    Write-Host "`nDEPLOYMENT COMPLETE"
+    Write-Host "The new stored procedures are ready for use by the email script"
 }
