@@ -34,7 +34,7 @@ Primary color for headers and borders (hex format, e.g., "#2F5233").
 Secondary color for table headers and accents (hex format, e.g., "#8FBC8F").
 
 .PARAMETER LogoPath
-Relative path to the logo image file.
+Relative or absolute path to the logo image file. If relative, it will be resolved relative to the project root first, then current directory.
 
 .PARAMETER LocationName
 Name of the event location.
@@ -53,6 +53,9 @@ URL for the mobile app (e.g., "https://sqlsatbr25.sessionize.com/"). If provided
 
 .EXAMPLE
 .\New-SQLSaturdaySchedule.ps1 -PageSize "legal" -PrimaryColor "#8B0000" -SecondaryColor "#CD5C5C" -LogoPath "assets/images/MyLogo.png"
+
+.EXAMPLE
+.\New-SQLSaturdaySchedule.ps1 -LogoPath "C:\MyProject\logo.png" -EventName "Custom Event" -EventDate "Jan 1, 2026"
 
 .NOTES
 Designed for SQL Saturday events but can be adapted for other conferences.
@@ -980,6 +983,37 @@ if (-not $OutputPath) {
     $OutputPath = Join-Path (Split-Path (Split-Path $scriptDir -Parent) -Parent) "assets\documents\Schedule.html"
 }
 if (-not $RoomPrefix) { $RoomPrefix = "" }
+
+# Handle LogoPath - support both relative and absolute paths
+if ($LogoPath) {
+    if ([System.IO.Path]::IsPathRooted($LogoPath)) {
+        # LogoPath is already an absolute path - use as is
+        $resolvedLogoPath = $LogoPath
+    } else {
+        # LogoPath is relative - resolve relative to script location or current directory
+        $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+        $projectRoot = Split-Path (Split-Path $scriptDir -Parent) -Parent
+        
+        # Try relative to project root first (common case for assets/images/logo.png)
+        $projectRelativePath = Join-Path $projectRoot $LogoPath
+        if (Test-Path $projectRelativePath) {
+            $resolvedLogoPath = $projectRelativePath
+        } else {
+            # Fall back to current directory
+            $resolvedLogoPath = Join-Path (Get-Location) $LogoPath
+        }
+    }
+    
+    # Verify the logo file exists
+    if (-not (Test-Path $resolvedLogoPath)) {
+        Write-Warning "Logo file not found at: $resolvedLogoPath"
+        Write-Host "   The schedule will be generated without a logo." -ForegroundColor Yellow
+        $LogoPath = $null
+    } else {
+        $LogoPath = $resolvedLogoPath
+        Write-Host "Using logo: $LogoPath" -ForegroundColor Green
+    }
+}
 
 try {
     # Fetch data from API
