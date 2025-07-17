@@ -186,12 +186,14 @@ body { margin: 0; padding: 0; font-family: Arial; }
   text-align: left;
   font-size: 10pt;
   word-break: break-word;
+  line-height: 1.1;
 }
 .email-text {
   font-size: 9pt;
   text-align: left;
   word-break: break-all;
   margin-top: 0.02in;
+  line-height: 1.1;
   /* REMOVE max-width and white-space */
 }
 </style>
@@ -249,8 +251,49 @@ function fitTextToContainer(el) {
     el.style.fontSize = fontSize + "pt";
   }
 }
+
+function fitEmailText(el) {
+  let fontSize = 9;
+  el.style.fontSize = fontSize + "pt";
+  
+  // Check if text wraps to multiple lines
+  const lineHeight = parseFloat(window.getComputedStyle(el).lineHeight);
+  const height = el.offsetHeight;
+  const lines = Math.round(height / lineHeight);
+  
+  // If more than 1 line, reduce font size
+  while (lines > 1 && fontSize > 6) {
+    fontSize -= 0.5;
+    el.style.fontSize = fontSize + "pt";
+    const newHeight = el.offsetHeight;
+    const newLines = Math.round(newHeight / lineHeight);
+    if (newLines <= 1) break;
+  }
+}
+
+function fitNameText(el) {
+  let fontSize = 10;
+  el.style.fontSize = fontSize + "pt";
+  
+  // Check if text wraps to multiple lines
+  const lineHeight = parseFloat(window.getComputedStyle(el).lineHeight);
+  const height = el.offsetHeight;
+  const lines = Math.round(height / lineHeight);
+  
+  // If more than 1 line, reduce font size
+  while (lines > 1 && fontSize > 7) {
+    fontSize -= 0.5;
+    el.style.fontSize = fontSize + "pt";
+    const newHeight = el.offsetHeight;
+    const newLines = Math.round(newHeight / lineHeight);
+    if (newLines <= 1) break;
+  }
+}
+
 window.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll(".fit-text").forEach(el => fitTextToContainer(el));
+  document.querySelectorAll(".email-text").forEach(el => fitEmailText(el));
+  document.querySelectorAll(".raffle-name").forEach(el => fitNameText(el));
 });
 </script>
 </body></html>
