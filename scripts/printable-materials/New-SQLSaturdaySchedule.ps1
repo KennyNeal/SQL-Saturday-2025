@@ -835,7 +835,7 @@ function New-ScheduleCSS {
             vertical-align: top;
             font-size: 9px;
             line-height: 1.1;
-            height: 58px;
+            height: 80px;
         }
         
         .schedule-table tr:nth-child(even) td {
@@ -984,11 +984,11 @@ function New-ScheduleCSS {
             }
             
             .schedule-table td {
-                height: 54px;
+                height: 75px;
             }
             
             .keynote-cell, .lunch-cell, .raffle-cell {
-                height: 36px;
+                height: 50px;
             }
         }
 "@
