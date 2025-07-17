@@ -1,45 +1,91 @@
 <#
 .SYNOPSIS
     Generates a printable Stamp Game sheet for SQL Saturday using sponsor logos.
+
 .DESCRIPTION
-    This script creates a grid of sponsor logos (from Raffle folder, alphabetically, plus GON-navy-logo.png last),
+    This script creates a grid of sponsor logos with customizable layout options,
     adds instructions and a Name field, and generates a PDF using Edge headless mode.
+
+.PARAMETER RaffleFolder
+    Path to folder containing raffle sponsor logos. Defaults to assets\images\Sponsor Logos\Raffle
+
+.PARAMETER CenterLogo
+    Path to logo that should be placed in the center of the grid. Defaults to SQL Saturday logo.
+
+.PARAMETER AdditionalLogos
+    Array of paths to additional logos to include in the grid (e.g., GON logo)
+
+.PARAMETER GridColumns
+    Number of columns in the grid. Defaults to 3.
+
 .OUTPUTS
     PDF file is generated in assets\documents\Stamp-Game-2025.pdf
+
+.EXAMPLE
+    .\Generate-StampGame.ps1
+    Generates stamp game with default settings.
+
+.EXAMPLE
+    .\Generate-StampGame.ps1 -GridColumns 4 -AdditionalLogos @("C:\path\to\extra\logo.png")
+    Generates stamp game with 4 columns and an extra logo.
+
 .NOTES
     Author: SQL Saturday Team
     Prerequisite: PowerShell 5.1+, Microsoft Edge browser
 #>
 
+param(
+    [string]$RaffleFolder,
+    [string]$CenterLogo,
+    [string[]]$AdditionalLogos = @(),
+    [int]$GridColumns = 3
+)
+
 # Paths
 $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
 $projectRoot = Split-Path -Parent (Split-Path -Parent $scriptPath)
-$raffleFolder = Join-Path $projectRoot "assets\images\Sponsor Logos\Raffle"
-$gonLogo = Join-Path $projectRoot "assets\images\Sponsor Logos\GON-navy-logo.png"
-$sqlSatLogo = Join-Path $projectRoot "assets\images\SQL_2025.png"
+
+# Set default paths if not provided
+if (-not $RaffleFolder) {
+    $RaffleFolder = Join-Path $projectRoot "assets\images\Sponsor Logos\Raffle"
+}
+if (-not $CenterLogo) {
+    $CenterLogo = Join-Path $projectRoot "assets\images\SQL_2025.png"
+}
+
 $outputFolder = Join-Path $projectRoot "assets\documents"
 $outputPdf = Join-Path $outputFolder "Stamp-Game-2025.pdf"
 $outputHtml = Join-Path $outputFolder "Stamp-Game-2025.html"
 
 # Get and sort logo files
-$logoFiles = Get-ChildItem -Path $raffleFolder | Where-Object { $_.Extension -match '\.(png|jpg|jpeg)$' } | Sort-Object Name | ForEach-Object { $_.FullName }
+$logoFiles = Get-ChildItem -Path $RaffleFolder | Where-Object { $_.Extension -match '\.(png|jpg|jpeg)$' } | Sort-Object Name | ForEach-Object { $_.FullName }
 
-# Add GON logo to the raffle logos first
-$logoFiles += $gonLogo
+# Add additional logos
+$logoFiles += $AdditionalLogos
 
-# Calculate center position for a 3-column grid
-$totalLogos = $logoFiles.Count + 1  # +1 for SQL Saturday logo
-$gridRows = [math]::Ceiling($totalLogos / 3)
-$centerPosition = [math]::Floor($totalLogos / 2)
+# Calculate grid layout
+$totalLogosWithCenter = $logoFiles.Count + 1  # +1 for center logo
+$gridRows = [math]::Ceiling($totalLogosWithCenter / $GridColumns)
+$totalCells = $gridRows * $GridColumns
 
-# Insert SQL Saturday logo at center position
+# Calculate center position
+$centerPosition = [math]::Floor($totalCells / 2)
+
+# Build final logo array with center logo and fill empty cells
 $finalLogos = @()
-for ($i = 0; $i -lt $totalLogos; $i++) {
+$logoIndex = 0
+
+for ($i = 0; $i -lt $totalCells; $i++) {
     if ($i -eq $centerPosition) {
-        $finalLogos += $sqlSatLogo
-    } else {
-        $logoIndex = if ($i -lt $centerPosition) { $i } else { $i - 1 }
+        # Place center logo
+        $finalLogos += $CenterLogo
+    } elseif ($logoIndex -lt $logoFiles.Count) {
+        # Place regular logos
         $finalLogos += $logoFiles[$logoIndex]
+        $logoIndex++
+    } else {
+        # Fill remaining cells with black squares
+        $finalLogos += "BLACK_SQUARE"
     }
 }
 
@@ -48,13 +94,18 @@ $logoFiles = $finalLogos
 # Preload sponsor logos as base64
 $sponsorLogos = @()
 foreach ($logoPath in $logoFiles) {
-    $logoBase64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes($logoPath))
-    $ext = [System.IO.Path]::GetExtension($logoPath).Replace(".","")
-    $sponsorLogos += @{ base64 = $logoBase64; ext = $ext; name = [System.IO.Path]::GetFileNameWithoutExtension($logoPath) }
+    if ($logoPath -eq "BLACK_SQUARE") {
+        # Create black square data
+        $sponsorLogos += @{ base64 = ""; ext = ""; name = "BLACK_SQUARE"; isBlackSquare = $true }
+    } else {
+        $logoBase64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes($logoPath))
+        $ext = [System.IO.Path]::GetExtension($logoPath).Replace(".","")
+        $sponsorLogos += @{ base64 = $logoBase64; ext = $ext; name = [System.IO.Path]::GetFileNameWithoutExtension($logoPath); isBlackSquare = $false }
+    }
 }
 
 # PDF grid settings
-$gridCols = 3
+$gridCols = $GridColumns
 $gridRows = [math]::Ceiling($sponsorLogos.Count / $gridCols)
 
 # Build HTML
@@ -86,7 +137,11 @@ body { font-family: Arial; margin: 0; }
 
 # Add logo cells for first copy
 foreach ($logo in $sponsorLogos) {
-    $html += "<div class='cell'><img class='logo-img' src='data:image/$($logo.ext);base64,$($logo.base64)' alt='$($logo.name)' /></div>"
+    if ($logo.isBlackSquare) {
+        $html += "<div class='cell' style='background: #000;'></div>"
+    } else {
+        $html += "<div class='cell'><img class='logo-img' src='data:image/$($logo.ext);base64,$($logo.base64)' alt='$($logo.name)' /></div>"
+    }
 }
 
 $html += @"
@@ -101,7 +156,11 @@ $html += @"
 
 # Add logo cells for second copy
 foreach ($logo in $sponsorLogos) {
-    $html += "<div class='cell'><img class='logo-img' src='data:image/$($logo.ext);base64,$($logo.base64)' alt='$($logo.name)' /></div>"
+    if ($logo.isBlackSquare) {
+        $html += "<div class='cell' style='background: #000;'></div>"
+    } else {
+        $html += "<div class='cell'><img class='logo-img' src='data:image/$($logo.ext);base64,$($logo.base64)' alt='$($logo.name)' /></div>"
+    }
 }
 
 $html += "</div></div></div></body></html>"
