@@ -19,8 +19,8 @@ SQL Server connection string. Defaults to localhost\SQLEXPRESS.
 .PARAMETER OutputFolder
 Path to folder containing PDF files. Defaults to output\speedpasses in project root.
 
-.PARAMETER CredPath
-Path to encrypted Gmail credentials file. Defaults to config\gmail-cred.xml in project root.
+.PARAMETER SecretName
+Name of the secret in SecretManagement containing Gmail credentials. Defaults to 'SQLSaturday-Gmail'.
 
 .PARAMETER DelaySeconds
 Delay in seconds between each email. Defaults to 2 seconds.
@@ -30,6 +30,9 @@ Number of emails to process in each batch. Defaults to 50.
 
 .PARAMETER EmailType
 Type of email to send: 'attendee' or 'volunteer'. Defaults to 'attendee'.
+
+.PARAMETER TestEmail
+Email address to send test emails to. When specified, only sends to this address.
 
 .EXAMPLE
 .\Mailing.ps1 -WhatIf
@@ -43,8 +46,13 @@ Send emails with warning banner included.
 .\Mailing.ps1 -DelaySeconds 5 -BatchSize 25
 Send emails with 5-second delays in batches of 25.
 
+.EXAMPLE
+.\Mailing.ps1 -TestEmail "test@example.com"
+Send test email to specific address only.
+
 .NOTES
-Requires Gmail app password stored in encrypted XML file.
+Requires Gmail app password stored in SecretManagement.
+Use: Set-Secret -Name "SQLSaturday-Gmail" -Secret (Get-Credential)
 Creates error logs and skipped lists in the output folder.
 #>
 
@@ -53,7 +61,7 @@ param(
     [switch]$ShowBanner = $false,
     [string]$ConnectionString = "Server=localhost\SQLEXPRESS;Database=SQLSaturday;Integrated Security=SSPI;",
     [string]$OutputFolder,
-    [string]$CredPath,
+    [string]$SecretName = "SQLSaturday-Gmail",
     [int]$DelaySeconds = 2,
     [int]$BatchSize = 50,
     [ValidateSet("attendee", "volunteer")][string]$EmailType = "attendee",
@@ -65,7 +73,6 @@ $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
 $projectRoot = Split-Path -Parent (Split-Path -Parent $scriptPath)
 $templateFolder = Join-Path $scriptPath "templates"
 if (-not $OutputFolder) { $OutputFolder = Join-Path $projectRoot "output\speedpasses" }
-if (-not $CredPath) { $CredPath = Join-Path $projectRoot "config\gmail-cred.xml" }
 
 # Load email templates
 function Get-EmailTemplate {
@@ -109,16 +116,17 @@ WHERE Are_you_willing_to_volunteer_during_the_event = 'Yes'
 }
 
 # Validate paths and credentials
-if (-not (Test-Path $CredPath)) {
-    throw "Credential file not found: $CredPath"
-}
-
 if (-not (Test-Path $OutputFolder)) {
     throw "Output folder not found: $OutputFolder"
 }
 
-$cred = Import-Clixml -Path $CredPath
-$from = $cred.UserName
+# Load Gmail credentials from SecretManagement
+try {
+    $cred = Get-Secret -Name $SecretName -AsPlainText:$false -ErrorAction Stop
+    $from = $cred.UserName
+} catch {
+    throw "Failed to retrieve Gmail credentials from SecretManagement. Please ensure the secret '$SecretName' exists. Use: Set-Secret -Name '$SecretName' -Secret (Get-Credential)"
+}
 
 Write-Host "SQL Saturday Email Sender"
 if ($WhatIfPreference) {
