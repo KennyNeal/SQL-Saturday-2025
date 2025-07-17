@@ -15,6 +15,9 @@
 .PARAMETER AdditionalLogos
     Array of paths to additional logos to include in the grid (e.g., GON logo)
 
+.PARAMETER AdditionalLogoPlacement
+    Where to place additional logos: 'End' (after raffle logos), 'Alphabetical' (sorted with raffle logos), or 'Beginning' (before raffle logos). Default is 'End'.
+
 .PARAMETER GridColumns
     Number of columns in the grid. Defaults to 3.
 
@@ -29,6 +32,10 @@
     .\Generate-StampGame.ps1 -GridColumns 4 -AdditionalLogos @("C:\path\to\extra\logo.png")
     Generates stamp game with 4 columns and an extra logo.
 
+.EXAMPLE
+    .\Generate-StampGame.ps1 -AdditionalLogos @("C:\path\to\gon.png") -AdditionalLogoPlacement "Alphabetical"
+    Generates stamp game with GON logo sorted alphabetically with other logos.
+
 .NOTES
     Author: SQL Saturday Team
     Prerequisite: PowerShell 5.1+, Microsoft Edge browser
@@ -38,6 +45,8 @@ param(
     [string]$RaffleFolder,
     [string]$CenterLogo,
     [string[]]$AdditionalLogos = @(),
+    [ValidateSet('End', 'Alphabetical', 'Beginning')]
+    [string]$AdditionalLogoPlacement = 'End',
     [int]$GridColumns = 3
 )
 
@@ -60,8 +69,20 @@ $outputHtml = Join-Path $outputFolder "Stamp-Game-2025.html"
 # Get and sort logo files
 $logoFiles = Get-ChildItem -Path $RaffleFolder | Where-Object { $_.Extension -match '\.(png|jpg|jpeg)$' } | Sort-Object Name | ForEach-Object { $_.FullName }
 
-# Add additional logos
-$logoFiles += $AdditionalLogos
+# Handle additional logos based on placement preference
+switch ($AdditionalLogoPlacement) {
+    'Beginning' {
+        $logoFiles = $AdditionalLogos + $logoFiles
+    }
+    'Alphabetical' {
+        # Combine all logos and sort alphabetically
+        $allLogos = $logoFiles + $AdditionalLogos
+        $logoFiles = $allLogos | Sort-Object { [System.IO.Path]::GetFileNameWithoutExtension($_) }
+    }
+    'End' {
+        $logoFiles += $AdditionalLogos
+    }
+}
 
 # Calculate grid layout
 $totalLogosWithCenter = $logoFiles.Count + 1  # +1 for center logo
