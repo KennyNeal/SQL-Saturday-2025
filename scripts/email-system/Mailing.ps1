@@ -48,11 +48,16 @@ Requires Gmail app password stored in encrypted XML file.
 Creates error logs and skipped lists in the output folder.
 #>
 
+# Use script location to find project root
+$scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
+$projectRoot = Split-Path -Parent (Split-Path -Parent $scriptPath)
+$defaultOutputFolder = Join-Path $projectRoot "output\speedpasses"
+
 [CmdletBinding(SupportsShouldProcess)]
 param(
     [switch]$ShowBanner = $false,
     [string]$ConnectionString = "Server=localhost\SQLEXPRESS;Database=SQLSaturday;Integrated Security=SSPI;",
-    [string]$OutputFolder = "C:\Users\kneal\OneDrive\Documents\SQL Saturday 2025\output\speedpasses",
+    [string]$OutputFolder = $defaultOutputFolder,
     [string]$CredPath = "C:\Users\kneal\gmail-cred.xml",
     [int]$DelaySeconds = 2,
     [int]$BatchSize = 50,
