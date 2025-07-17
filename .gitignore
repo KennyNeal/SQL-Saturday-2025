@@ -33,3 +33,4 @@ obj/
 *.nupkg
 Auto_Schedule_Test.html
 Test_Schedule.html
+config/gmail-cred.xml

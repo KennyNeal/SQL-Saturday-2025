@@ -17,10 +17,10 @@ Include a warning banner in emails (useful for resend notifications).
 SQL Server connection string. Defaults to localhost\SQLEXPRESS.
 
 .PARAMETER OutputFolder
-Path to folder containing PDF files. Defaults to current SpeedPass folder.
+Path to folder containing PDF files. Defaults to output\speedpasses in project root.
 
 .PARAMETER CredPath
-Path to encrypted Gmail credentials file. Defaults to standard location.
+Path to encrypted Gmail credentials file. Defaults to config\gmail-cred.xml in project root.
 
 .PARAMETER DelaySeconds
 Delay in seconds between each email. Defaults to 2 seconds.
@@ -48,22 +48,23 @@ Requires Gmail app password stored in encrypted XML file.
 Creates error logs and skipped lists in the output folder.
 #>
 
-# Use script location to find project root
-$scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
-$projectRoot = Split-Path -Parent (Split-Path -Parent $scriptPath)
-$defaultOutputFolder = Join-Path $projectRoot "output\speedpasses"
-
 [CmdletBinding(SupportsShouldProcess)]
 param(
     [switch]$ShowBanner = $false,
     [string]$ConnectionString = "Server=localhost\SQLEXPRESS;Database=SQLSaturday;Integrated Security=SSPI;",
-    [string]$OutputFolder = $defaultOutputFolder,
-    [string]$CredPath = "C:\Users\kneal\gmail-cred.xml",
+    [string]$OutputFolder,
+    [string]$CredPath,
     [int]$DelaySeconds = 2,
     [int]$BatchSize = 50,
     [ValidateSet("attendee", "volunteer")][string]$EmailType = "attendee",
     [string]$TestEmail = ""
 )
+
+# Use script location to find project root and set default paths
+$scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
+$projectRoot = Split-Path -Parent (Split-Path -Parent $scriptPath)
+if (-not $OutputFolder) { $OutputFolder = Join-Path $projectRoot "output\speedpasses" }
+if (-not $CredPath) { $CredPath = Join-Path $projectRoot "config\gmail-cred.xml" }
 
 # CONFIGURATION
 $markEmailedProc = "dbo.AttendeesMarkAsEmailed"
