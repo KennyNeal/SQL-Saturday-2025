@@ -6,8 +6,8 @@
     This script creates a grid of sponsor logos with customizable layout options,
     adds instructions and a Name field, and generates a PDF using Edge headless mode.
 
-.PARAMETER RaffleFolder
-    Path to folder containing raffle sponsor logos. Defaults to assets\images\Sponsor Logos\Raffle
+.PARAMETER LogoFolder
+    Path to folder containing sponsor logos. Defaults to assets\images\Sponsor Logos\Raffle
 
 .PARAMETER CenterLogo
     Path to logo that should be placed in the center of the grid. Defaults to SQL Saturday logo.
@@ -42,7 +42,7 @@
 #>
 
 param(
-    [string]$RaffleFolder,
+    [string]$LogoFolder,
     [string]$CenterLogo,
     [string[]]$AdditionalLogos = @(),
     [ValidateSet('End', 'Alphabetical', 'Beginning')]
@@ -55,8 +55,8 @@ $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
 $projectRoot = Split-Path -Parent (Split-Path -Parent $scriptPath)
 
 # Set default paths if not provided
-if (-not $RaffleFolder) {
-    $RaffleFolder = Join-Path $projectRoot "assets\images\Sponsor Logos\Raffle"
+if (-not $LogoFolder) {
+    $LogoFolder = Join-Path $projectRoot "assets\images\Sponsor Logos\Raffle"
 }
 if (-not $CenterLogo) {
     $CenterLogo = Join-Path $projectRoot "assets\images\SQL_2025.png"
@@ -67,7 +67,7 @@ $outputPdf = Join-Path $outputFolder "Stamp-Game-2025.pdf"
 $outputHtml = Join-Path $outputFolder "Stamp-Game-2025.html"
 
 # Get and sort logo files
-$logoFiles = Get-ChildItem -Path $RaffleFolder | Where-Object { $_.Extension -match '\.(png|jpg|jpeg)$' } | Sort-Object Name | ForEach-Object { $_.FullName }
+$logoFiles = Get-ChildItem -Path $LogoFolder | Where-Object { $_.Extension -match '\.(png|jpg|jpeg)$' } | Sort-Object Name | ForEach-Object { $_.FullName }
 
 # Handle additional logos based on placement preference
 switch ($AdditionalLogoPlacement) {
@@ -138,21 +138,45 @@ $html = @"
   margin: 0.25in;
 }
 body { font-family: Arial; margin: 0; }
-.page { display: flex; flex-direction: row; height: 100vh; gap: 0.5in; }
-.stamp-sheet { flex: 1; }
+.page { display: flex; flex-direction: row; height: 100vh; gap: 0.3in; max-width: 10in; }
+.stamp-sheet { 
+  flex: 1; 
+  display: flex; 
+  flex-direction: column; 
+  justify-content: space-between;
+  min-height: 100%;
+  max-width: 4.85in;
+}
+.header-section {
+  flex-shrink: 0;
+}
+.grid-section {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 .header { font-size: 12pt; font-weight: bold; margin-bottom: 0.1in; }
 .instructions { font-size: 11pt; margin-bottom: 0.1in; }
 .name-field { font-size: 11pt; margin-bottom: 0.2in; }
-.grid { display: grid; grid-template-columns: repeat($gridCols, 2in); grid-gap: 0in; }
-.cell { width: 2in; height: 1.3in; border: 1px solid #333; display: flex; align-items: center; justify-content: center; background: #fff; }
-.logo-img { max-width: 1.8in; max-height: 1.1in; object-fit: contain; }
+.grid { 
+  display: grid; 
+  grid-template-columns: repeat($gridCols, 1.5in); 
+  grid-gap: 0in; 
+  width: fit-content;
+}
+.cell { width: 1.5in; height: 1.2in; border: 1px solid #333; display: flex; align-items: center; justify-content: center; background: #fff; }
+.logo-img { max-width: 1.4in; max-height: 1.1in; object-fit: contain; }
 </style>
 </head><body>
 <div class="page">
 <div class="stamp-sheet">
+<div class="header-section">
 <div class="instructions">Get a stamp from each sponsor and return your completed form to the User Group table to enter the grand prize drawing.</div>
 <div class="header">YOU MUST BE PRESENT TO WIN</div>
 <div class="name-field">Name: ____________________________________________</div>
+</div>
+<div class="grid-section">
 <div class="grid">
 "@
 
@@ -168,10 +192,14 @@ foreach ($logo in $sponsorLogos) {
 $html += @"
 </div>
 </div>
+</div>
 <div class="stamp-sheet">
+<div class="header-section">
 <div class="instructions">Get a stamp from each sponsor and return your completed form to the User Group table to enter the grand prize drawing.</div>
 <div class="header">YOU MUST BE PRESENT TO WIN</div>
 <div class="name-field">Name: ____________________________________________</div>
+</div>
+<div class="grid-section">
 <div class="grid">
 "@
 
@@ -184,7 +212,7 @@ foreach ($logo in $sponsorLogos) {
     }
 }
 
-$html += "</div></div></div></body></html>"
+$html += "</div></div></div></div></body></html>"
 
 # Save HTML
 Set-Content -Path $outputHtml -Value $html -Encoding UTF8
