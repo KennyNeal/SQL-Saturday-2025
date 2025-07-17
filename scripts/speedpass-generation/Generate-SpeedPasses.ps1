@@ -2,11 +2,14 @@
 $connectionString = "Server=localhost\SQLEXPRESS;Database=SQLSaturday;Integrated Security=SSPI;"
 $query = "SELECT First_Name, Last_Name, Email, Job_Title, Company, Lunch_Type, Barcode, vCard FROM dbo.AttendeesGetUnPrintedOrders"
 
-$BaseFolder = "C:\Users\kneal\OneDrive\Documents\SQL Saturday 2025"
+# Use script location to find project root
+$scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
+$projectRoot = Split-Path -Parent (Split-Path -Parent $scriptPath)
+
 # Paths - Updated for new project structure
-$sqlSatLogoPath = Join-Path $BaseFolder "assets\images\SQL_2025.png"
-$sponsorFolder = Join-Path $BaseFolder "assets\images\Sponsor Logos\Raffle"
-$outputFolder = Join-Path $BaseFolder "output\speedpasses"
+$sqlSatLogoPath = Join-Path $projectRoot "assets\images\SQL_2025.png"
+$sponsorFolder = Join-Path $projectRoot "assets\images\Sponsor Logos\Raffle"
+$outputFolder = Join-Path $projectRoot "output\speedpasses"
 $rawFolder = Join-Path $outputFolder "raw"
 
 # Ensure folders exist
