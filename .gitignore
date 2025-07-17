@@ -1,5 +1,7 @@
-# Ignore all SpeedPass subfolders
-SpeedPass/**
+
+# Ignore output folders
+output/
+raw/
 
 # Ignore database files
 *.mdf
