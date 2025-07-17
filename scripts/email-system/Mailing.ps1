@@ -63,43 +63,39 @@ param(
 # Use script location to find project root and set default paths
 $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
 $projectRoot = Split-Path -Parent (Split-Path -Parent $scriptPath)
+$templateFolder = Join-Path $scriptPath "templates"
 if (-not $OutputFolder) { $OutputFolder = Join-Path $projectRoot "output\speedpasses" }
 if (-not $CredPath) { $CredPath = Join-Path $projectRoot "config\gmail-cred.xml" }
+
+# Load email templates
+function Get-EmailTemplate {
+    param(
+        [string]$TemplateName,
+        [string]$TemplateFolder
+    )
+    
+    $templatePath = Join-Path $TemplateFolder "$TemplateName.html"
+    if (Test-Path $templatePath) {
+        return Get-Content -Path $templatePath -Raw
+    } else {
+        throw "Template file not found: $templatePath"
+    }
+}
 
 # CONFIGURATION
 $markEmailedProc = "dbo.AttendeesMarkAsEmailed"
 $markBatchEmailedProc = "dbo.AttendeesMarkBatchAsEmailed"
-$bannerHtml = "<p style='color: red; font-weight: bold;'>There was an issue with our first batch of emails. We're sorry if you have received this twice.</p>"
+
+# Load email templates
+$bannerTemplate = Get-EmailTemplate -TemplateName "banner" -TemplateFolder $templateFolder
+$attendeeTemplate = Get-EmailTemplate -TemplateName "attendee-email" -TemplateFolder $templateFolder
+$volunteerTemplate = Get-EmailTemplate -TemplateName "volunteer-email" -TemplateFolder $templateFolder
 
 switch ($EmailType) {
     "attendee" {
         $getAttendeesQuery = "EXEC dbo.AttendeesGetForEmail"
         $subject = "See You at SQL Saturday Baton Rouge 2025!"
-        $bodyTemplate = @"
-$(if ($ShowBanner) { $bannerHtml } else { "" })
-<p>Hi {{FirstName}},</p>
-<p>Your personalized SpeedPass for SQL Saturday Baton Rouge 2025 is attached!</p>
-<p><b>Please print your SpeedPass and bring it with you to the event.</b> This will help us check you in quickly and get you to the sessions and raffle tickets faster.</p>
-<p>We still have seats available for both of our pre-conference sessions:</p>
-<ul>
-  <li>
-    <b>Jumpstart Your Power BI Skills: A Hands on Workshop</b><br>
-    <a href='https://www.sqlsatbr.com/precons#h.nlb272c3ff5i'>Register here</a>
-  </li>
-  <li>
-    <b>Become immediately effective with PowerShell</b><br>
-    <a href='https://www.sqlsatbr.com/precons#h.dg9pejggrn5z'>Register here</a>
-  </li>
-</ul>
-<p>Interested in helping out?<br>
-Sign up to volunteer here:<br>
-<a href='https://www.signupgenius.com/go/4090C49AFAA2EA2FF2-57005830-sqlsaturday#/'>https://www.signupgenius.com/go/4090C49AFAA2EA2FF2-57005830-sqlsaturday#/</a>
-</p>
-<p>Please help us spread the word! Share our event on social media and invite your friends and colleagues.</p>
-<p>We look forward to seeing you soon!</p>
-<p>Best regards,<br>
-The SQL Saturday Baton Rouge Team</p>
-"@
+        $bodyTemplate = $attendeeTemplate
     }
     "volunteer" {
         $getAttendeesQuery = @"
@@ -108,16 +104,7 @@ FROM SQLSaturday..Attendees
 WHERE Are_you_willing_to_volunteer_during_the_event = 'Yes'
 "@
         $subject = "Volunteer for SQL Saturday Baton Rouge 2025!"
-        $bodyTemplate = @"
-<p>Hi {{FirstName}},</p>
-<p>Thank you for offering to volunteer at SQL Saturday Baton Rouge 2025!</p>
-<p>Please sign up for a volunteer slot here:<br>
-<a href='https://www.signupgenius.com/go/4090C49AFAA2EA2FF2-57005830-sqlsaturday#/'>Volunteer Signup</a>
-</p>
-<p>We appreciate your help and look forward to seeing you at the event!</p>
-<p>Best regards,<br>
-The SQL Saturday Baton Rouge Team</p>
-"@
+        $bodyTemplate = $volunteerTemplate
     }
 }
 
@@ -295,18 +282,20 @@ if ($validAttendees.Count -gt 0) {
         
         foreach ($item in $batch) {
             $a = $item.Attendee
-            $body = $bodyTemplate -replace '{{FirstName}}', $a.FirstName
+            
+            # Process template placeholders
+            $body = $bodyTemplate
+            $body = $body -replace '{{FirstName}}', $a.FirstName
+            $body = $body -replace '{{BANNER}}', $(if ($ShowBanner) { $bannerTemplate } else { "" })
             
             try {
                 if ($EmailType -eq "attendee") {
                     $subject = "See You at SQL Saturday Baton Rouge 2025!"
-                    $body = $bodyTemplate -replace '{{FirstName}}', $a.FirstName
                     
                     Send-MailMessage -To $a.Email -From $from -Subject $subject -Body $body `
                         -SmtpServer $smtp -Port $port -UseSsl -Credential $cred -Attachments $item.PdfPath -BodyAsHtml -WarningAction SilentlyContinue
                 } elseif ($EmailType -eq "volunteer") {
                     $subject = "Volunteer for SQL Saturday Baton Rouge 2025!"
-                    $body = $bodyTemplate -replace '{{FirstName}}', $a.FirstName
                     
                     Send-MailMessage -To $a.Email -From $from -Subject $subject -Body $body `
                         -SmtpServer $smtp -Port $port -UseSsl -Credential $cred -BodyAsHtml -WarningAction SilentlyContinue
