@@ -18,6 +18,7 @@ $attendeesUrl = "https://www.eventbriteapi.com/v3/events/$eventId/attendees/"
 $attendees = @()
 $query = "?status=attending"
 
+Write-Host "Fetching attendees from Eventbrite..."
 do {
     $response = Invoke-RestMethod -Method Get -Uri ($attendeesUrl + $query) -Headers $header
     $attendees += $response.attendees

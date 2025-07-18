@@ -2,6 +2,8 @@
 # Ignore output folders
 output/
 raw/
+documents/speedpasses/
+assets/documents/speedpasses/
 
 # Ignore database files
 *.mdf
@@ -31,6 +33,3 @@ obj/
 
 # Ignore NuGet packages
 *.nupkg
-Auto_Schedule_Test.html
-Test_Schedule.html
-config/gmail-cred.xml
