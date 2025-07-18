@@ -62,7 +62,7 @@ if (-not $CenterLogo) {
     $CenterLogo = Join-Path $projectRoot "assets\images\SQL_2025.png"
 }
 
-$outputFolder = Join-Path $projectRoot "assets\documents"
+$outputFolder = Join-Path $projectRoot "output"
 $outputPdf = Join-Path $outputFolder "Stamp-Game-2025.pdf"
 $outputHtml = Join-Path $outputFolder "Stamp-Game-2025.html"
 
