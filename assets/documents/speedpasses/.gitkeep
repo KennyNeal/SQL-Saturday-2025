@@ -1,0 +1,2 @@
+# This file ensures the speedpasses folder is included in git
+# while the actual speedpass files are ignored
