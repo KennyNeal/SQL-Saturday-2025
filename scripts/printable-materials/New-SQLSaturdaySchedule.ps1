@@ -48,6 +48,9 @@ Prefix to remove from room names (e.g., "BEC ").
 .PARAMETER AppUrl
 URL for the mobile app (e.g., "https://sqlsatbr25.sessionize.com/"). If provided, a QR code will be added to the header.
 
+.PARAMETER GeneratePDF
+If specified, generates a PDF version of the schedule in addition to the HTML file using Microsoft Edge headless mode.
+
 .EXAMPLE
 .\New-SQLSaturdaySchedule.ps1 -ApiUrl "https://sessionize.com/api/v2/qta105as/view/GridSmart" -EventName "SQL Saturday City 2026" -EventDate "July 25, 2026" -EventDateFilter "2026-07-25T00:00:00" -PrimaryColor "#1B4B3A" -SecondaryColor "#7BAE7B"
 
@@ -57,9 +60,13 @@ URL for the mobile app (e.g., "https://sqlsatbr25.sessionize.com/"). If provided
 .EXAMPLE
 .\New-SQLSaturdaySchedule.ps1 -LogoPath "C:\MyProject\logo.png" -EventName "Custom Event" -EventDate "Jan 1, 2026"
 
+.EXAMPLE
+.\New-SQLSaturdaySchedule.ps1 -ApiUrl "https://sessionize.com/api/v2/qta105as/view/GridSmart" -EventName "SQL Saturday City 2026" -EventDate "July 25, 2026" -GeneratePDF
+
 .NOTES
 Designed for SQL Saturday events but can be adapted for other conferences.
 Time slots, keynotes, lunch, and raffle times are automatically detected from the schedule data.
+Requires Microsoft Edge browser for PDF generation.
 #>
 
 [CmdletBinding()]
@@ -82,7 +89,8 @@ param(
     [string]$LocationName,
     [string]$Website,
     [string]$RoomPrefix,
-    [string]$AppUrl
+    [string]$AppUrl,
+    [switch]$GeneratePDF
 )
 
 # Function to generate a simple QR code using an online service
@@ -108,15 +116,15 @@ function Get-OptimalRoomDistribution {
     
     # Calculate approximate available width for content based on page size (landscape)
     $pageWidths = @{
-        "letter" = 10.0    # 11" - 1" margins = 10" available width
-        "legal" = 13.0     # 14" - 1" margins = 13" available width  
-        "a4" = 10.5        # 11.7" - 1.2" margins ≈ 10.5" available width
+        "letter" = 10.4    # 11" - 0.6" total margins = 10.4" available width
+        "legal" = 13.2     # 14" - 0.8" total margins = 13.2" available width  
+        "a4" = 11.1        # 11.7" - 0.6" total margins ≈ 11.1" available width
     }
     
     $availableWidth = $pageWidths[$pageSize.ToLower()] ?? $pageWidths["letter"]
     
     # Reserve space for time column (approximately 0.8 inches)
-    $timeColumnWidth = 0.8
+    $timeColumnWidth = 0.7
     $contentWidth = $availableWidth - $timeColumnWidth
     
     Write-Host "📐 Page analysis: $pageSize size = $availableWidth inches total, $contentWidth inches for room columns" -ForegroundColor Cyan
@@ -149,34 +157,41 @@ function Get-OptimalRoomDistribution {
         $columnWidth = [Math]::Max($estimatedWidth, 1.2)
         
         $roomWidths.Add(@{
-            Room = $room
-            Width = $columnWidth
-            DisplayName = $displayName
             CharLength = $maxLineLength
+            Width = $columnWidth
+            Room = $room
+            DisplayName = $displayName
         })
         $totalWidth += $columnWidth
         
         Write-Host "   📏 Room '$($room.name)' → '$displayName' = $maxLineLength chars ≈ $($columnWidth.ToString('F1')) inches" -ForegroundColor Gray
     }
     
-    # Calculate minimum number of pages needed based on total width
-    $minPagesNeeded = [Math]::Ceiling($totalWidth / $contentWidth)
-    Write-Host "🔢 Total width needed: $($totalWidth.ToString('F1')) inches, minimum pages: $minPagesNeeded" -ForegroundColor Yellow
+    # First check if all rooms actually fit on one page
+    Write-Host "🔢 Total width needed: $($totalWidth.ToString('F1')) inches, available width: $($contentWidth.ToString('F1')) inches" -ForegroundColor Yellow
     
     # Try to distribute rooms evenly across the minimum number of pages
     $roomPages = @()
     
-    if ($minPagesNeeded -eq 1) {
-        # All rooms fit on one page
-        $roomPages += ,($rooms)
+    if ($totalWidth -le $contentWidth) {
+        # All rooms fit on one page - create a single page containing all rooms
+        $singlePage = [PSCustomObject]@{
+            Rooms = $rooms
+            PageNumber = 1
+        }
+        $roomPages = @($singlePage)
         Write-Host "✅ All $($rooms.Count) rooms fit on single page" -ForegroundColor Green
     } else {
+        # Calculate minimum number of pages needed based on total width
+        $minPagesNeeded = [Math]::Ceiling($totalWidth / $contentWidth)
+        Write-Host "📄 Splitting into $minPagesNeeded pages" -ForegroundColor Yellow
+        
         # Distribute rooms as evenly as possible across pages
         $targetRoomsPerPage = [Math]::Ceiling($rooms.Count / $minPagesNeeded)
         Write-Host "🎯 Target: $targetRoomsPerPage rooms per page across $minPagesNeeded pages" -ForegroundColor Cyan
         
         # Create balanced distribution (optimized)
-        $roomPages = [System.Collections.Generic.List[array]]::new($minPagesNeeded)
+        $roomPages = [System.Collections.Generic.List[PSCustomObject]]::new($minPagesNeeded)
         for ($pageNum = 0; $pageNum -lt $minPagesNeeded; $pageNum++) {
             $startIndex = $pageNum * $targetRoomsPerPage
             $endIndex = [Math]::Min($startIndex + $targetRoomsPerPage - 1, $rooms.Count - 1)
@@ -185,7 +200,11 @@ function Get-OptimalRoomDistribution {
                 $pageRooms = $rooms[$startIndex..$endIndex]
                 $pageWidth = ($roomWidths[$startIndex..$endIndex] | Measure-Object -Property Width -Sum).Sum
                 
-                $roomPages.Add($pageRooms)
+                $pageObject = [PSCustomObject]@{
+                    Rooms = $pageRooms
+                    PageNumber = $pageNum + 1
+                }
+                $roomPages.Add($pageObject)
                 Write-Host "   📄 Page $($pageNum + 1): $($pageRooms.Count) rooms, $($pageWidth.ToString('F1')) inches width" -ForegroundColor Green
                 Write-Host "      📋 Rooms: $($pageRooms.name -join ', ')" -ForegroundColor White
             }
@@ -222,7 +241,7 @@ function Get-OptimalRoomDistribution {
     # Final summary
     Write-Host "🎯 Final distribution: $($roomPages.Count) pages" -ForegroundColor Green
     for ($i = 0; $i -lt $roomPages.Count; $i++) {
-        $pageRooms = $roomPages[$i]
+        $pageRooms = $roomPages[$i].Rooms
         $pageWidth = 0
         foreach ($room in $pageRooms) {
             $roomWidth = ($roomWidths | Where-Object { $_.Room.id -eq $room.id }).Width
@@ -807,10 +826,10 @@ function New-ScheduleCSS {
     
     # Set margins based on page size for optimal fit
     $pageMargin = switch ($PageSize) {
-        "letter" { "0.4in" }    # Tighter margins for letter size
-        "legal" { "0.5in" }     # Standard margins for legal
-        "a4" { "0.4in" }        # Tighter margins for A4
-        default { "0.5in" }
+        "letter" { "0.3in" }    # Tighter margins for letter size PDF
+        "legal" { "0.4in" }     # Tighter margins for legal
+        "a4" { "0.3in" }        # Tighter margins for A4
+        default { "0.4in" }
     }
     
     return @"
@@ -826,12 +845,13 @@ function New-ScheduleCSS {
             margin: 0;
             padding: 0;
             color: #333;
+            box-sizing: border-box;
         }
         
         .header {
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             border-bottom: 2px solid $PrimaryColor;
-            padding-bottom: 6px;
+            padding-bottom: 4px;
             position: relative;
             display: flex;
             justify-content: space-between;
@@ -905,39 +925,42 @@ function New-ScheduleCSS {
             border-collapse: collapse;
             border: 2px solid $PrimaryColor;
             font-size: 9px;
+            table-layout: fixed;
         }
         
         .schedule-table th {
             background: $SecondaryColor;
             color: white;
-            padding: 8px 4px;
+            padding: 6px 3px;
             text-align: center;
             font-weight: bold;
-            font-size: 9px;
+            font-size: 8px;
             border: 1px solid $PrimaryColor;
             line-height: 1.1;
         }
         
         .time-column {
-            width: 60px;
-            min-width: 60px;
+            width: 55px;
+            min-width: 55px;
         }
         
         .room-column {
             width: auto;
             text-align: center;
-            font-size: 8px;
+            font-size: 7px;
             font-weight: bold;
             white-space: pre-line;
         }
         
         .schedule-table td {
             border: 1px solid #ccc;
-            padding: 4px 3px;
+            padding: 3px 2px;
             vertical-align: top;
-            font-size: 9px;
+            font-size: 8px;
             line-height: 1.1;
-            height: 80px;
+            height: 65px;
+            overflow: hidden;
+            word-wrap: break-word;
         }
         
         .schedule-table tr:nth-child(even) td {
@@ -953,7 +976,7 @@ function New-ScheduleCSS {
             text-align: center;
             color: $PrimaryColor;
             white-space: nowrap;
-            font-size: 10px;
+            font-size: 9px;
             border-right: 2px solid $SecondaryColor;
         }
         
@@ -966,23 +989,23 @@ function New-ScheduleCSS {
             color: #333;
             margin-bottom: 2px;
             line-height: 1.1;
-            font-size: 9px;
+            font-size: 8px;
         }
         
         .session-speaker {
             color: #666;
             font-style: italic;
-            font-size: 8px;
+            font-size: 7px;
         }
         
         .session-level {
             color: $PrimaryColor;
             font-weight: bold;
-            font-size: 7px;
+            font-size: 6px;
             margin-top: 2px;
             text-transform: uppercase;
             background-color: ${lightPrimaryColor};
-            padding: 1px 4px;
+            padding: 1px 3px;
             border-radius: 2px;
             display: inline-block;
             border: 1px solid $SecondaryColor;
@@ -991,24 +1014,24 @@ function New-ScheduleCSS {
         .session-track {
             color: $SecondaryColor;
             font-weight: bold;
-            font-size: 7px;
+            font-size: 6px;
             margin-top: 2px;
             text-transform: uppercase;
             background-color: ${lightSecondaryColor};
-            padding: 1px 4px;
+            padding: 1px 3px;
             border-radius: 2px;
             display: inline-block;
             border: 1px solid $PrimaryColor;
-            margin-left: 4px;
+            margin-left: 3px;
         }
         
         .session-time {
             color: $PrimaryColor;
             font-weight: bold;
-            font-size: 7px;
+            font-size: 6px;
             margin-top: 2px;
             background: ${lightSecondaryColor};
-            padding: 1px 3px;
+            padding: 1px 2px;
             border-radius: 2px;
             display: inline-block;
             border: 1px solid $SecondaryColor;
@@ -1126,15 +1149,15 @@ function New-ScheduleCSS {
             }
             
             .schedule-table td {
-                height: 75px;
+                height: 65px;
             }
             
             .keynote-cell, .lunch-cell, .raffle-cell {
-                height: 50px;
+                height: 45px;
             }
             
             .special-event-small {
-                height: 75px;
+                height: 65px;
             }
         }
 "@
@@ -1271,10 +1294,13 @@ foreach ($currentDay in $daysToProcess) {
     # Dynamically determine optimal room distribution based on content width
     $roomPages = Get-OptimalRoomDistribution -rooms $allRooms -pageSize $PageSize -roomPrefix $RoomPrefix
     
-    Write-Host "📄 Generating $($roomPages.Count) pages for $dayName" -ForegroundColor Green
+    Write-Host "� DEBUG: RoomPages count after function call: $($roomPages.Count)" -ForegroundColor Magenta
+
+    
+    Write-Host "�📄 Generating $($roomPages.Count) pages for $dayName" -ForegroundColor Green
     
     for ($pageIndex = 0; $pageIndex -lt $roomPages.Count; $pageIndex++) {
-        $currentPageRooms = $roomPages[$pageIndex]
+        $currentPageRooms = $roomPages[$pageIndex].Rooms
         $isFirstPage = $pageIndex -eq 0
         $isLastPage = $pageIndex -eq ($roomPages.Count - 1)
         
@@ -1286,8 +1312,8 @@ foreach ($currentDay in $daysToProcess) {
         $pageHtml = New-TimeSlotGrid -dayData $currentDay -dayTitle $pageTitle -roomsToInclude $currentPageRooms -timeSlots $timeSlots -specialEvents $specialEvents -roomPrefix $RoomPrefix -EventName $EventName -EventDate $EventDate -LocationName $LocationName -Website $Website -LogoPath $LogoPath -AppUrl $AppUrl -IncludeHeader $isFirstPage
         $allDayPages.Add($pageHtml)
         
-        # Add blank page after last page if we have an odd number of total pages (for double-sided printing alignment)
-        if ($isLastPage -and $roomPages.Count % 2 -eq 1) {
+        # Add blank page after last page of this day if it has an odd number of pages and there are more days to process
+        if ($isLastPage -and $roomPages.Count % 2 -eq 1 -and $currentDay -ne $daysToProcess[-1]) {
             $blankPageHtml = @"
 <div class="day-section">
     <div style="text-align: center; padding-top: 200px; font-size: 16px; color: #666;">
@@ -1356,6 +1382,44 @@ try {
     $htmlContent | Out-File -FilePath $fullPath -Encoding UTF8
     Write-Host "✅ Schedule generated successfully!" -ForegroundColor Green
     Write-Host "📄 File saved to: $fullPath" -ForegroundColor Gray
+    
+    # Generate PDF if requested
+    if ($GeneratePDF) {
+        Write-Host "`n🔄 Generating PDF..." -ForegroundColor Yellow
+        
+        # Determine PDF path
+        $pdfPath = $fullPath -replace '\.html$', '.pdf'
+        
+        # Try to find Microsoft Edge
+        $edgePaths = @(
+            "${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe",
+            "${env:ProgramFiles}\Microsoft\Edge\Application\msedge.exe"
+        )
+        
+        $edgePath = $null
+        foreach ($path in $edgePaths) {
+            if (Test-Path $path) {
+                $edgePath = $path
+                break
+            }
+        }
+        
+        if ($edgePath) {
+            try {
+                # Generate PDF using Edge headless mode
+                $null = & $edgePath --headless=new --print-to-pdf="$pdfPath" --no-margins "file:///$fullPath" --disable-gpu --disable-extensions --no-pdf-header-footer 2>&1
+                Write-Host "✅ PDF generated successfully!" -ForegroundColor Green
+                Write-Host "📄 PDF saved to: $pdfPath" -ForegroundColor Gray
+            } catch {
+                Write-Host "⚠️ Warning: Could not generate PDF. HTML file available at: $fullPath" -ForegroundColor Yellow
+                Write-Host "Error: $($_.Exception.Message)" -ForegroundColor Red
+            }
+        } else {
+            Write-Host "⚠️ Warning: Microsoft Edge not found. HTML file available at: $fullPath" -ForegroundColor Yellow
+            Write-Host "You can manually convert the HTML to PDF using your preferred method." -ForegroundColor Yellow
+        }
+    }
+    
     Write-Host "`n📋 Print Instructions:" -ForegroundColor Cyan
     Write-Host "   1. Open the HTML file in a web browser" -ForegroundColor White
     Write-Host "   2. Set printer to $PageSize size" -ForegroundColor White
@@ -1373,9 +1437,16 @@ try {
     Write-Host "   • Logo: $LogoPath" -ForegroundColor White
     
     # Open the file if requested
-    $openFile = Read-Host "`nWould you like to open the file now? (y/n)"
-    if ($openFile -eq 'y' -or $openFile -eq 'Y') {
-        Start-Process $fullPath
+    if ($GeneratePDF -and (Test-Path ($fullPath -replace '\.html$', '.pdf'))) {
+        $openFile = Read-Host "`nWould you like to open the PDF file now? (y/n)"
+        if ($openFile -eq 'y' -or $openFile -eq 'Y') {
+            Start-Process ($fullPath -replace '\.html$', '.pdf')
+        }
+    } else {
+        $openFile = Read-Host "`nWould you like to open the HTML file now? (y/n)"
+        if ($openFile -eq 'y' -or $openFile -eq 'Y') {
+            Start-Process $fullPath
+        }
     }
     
 } catch {
