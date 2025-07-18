@@ -1,12 +1,15 @@
 
-# Ignore output folders
-output/
-raw/
-documents/speedpasses/
+# Track output folder (contains printable materials like blank speedpasses, schedules, stamp game)
+# But ignore some generated files
+output/*.html
+output/convert-to-pdf.ps1
 
-# Include speedpass output folder but ignore its contents
+# Ignore speedpass processing folder (contains named speedpasses for emailing)
 assets/documents/speedpasses/*
 !assets/documents/speedpasses/.gitkeep
+
+# Ignore raw QR code folder
+raw/
 
 # Ignore database files
 *.mdf

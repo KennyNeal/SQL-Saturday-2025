@@ -50,7 +50,7 @@
     None. You cannot pipe objects to this script.
 
 .OUTPUTS
-    PDF files are generated in the assets\documents\speedpasses folder.
+    Named speedpasses (PDF files) are generated in the assets\documents\speedpasses folder for processing and emailing.
     Raw QR code images are stored in assets\documents\speedpasses\raw folder.
     Blank speedpass templates are generated in the output folder for printing.
 
@@ -86,11 +86,11 @@ $projectRoot = Split-Path -Parent (Split-Path -Parent $scriptPath)
 # Paths - Updated for new project structure
 $sqlSatLogoPath = Join-Path $projectRoot "assets\images\SQL_2025.png"
 $sponsorFolder = Join-Path $projectRoot "assets\images\Sponsor Logos\Raffle"
-$outputFolder = Join-Path $projectRoot "assets\documents\speedpasses"
-$rawFolder = Join-Path $outputFolder "raw"
+$speedpassFolder = Join-Path $projectRoot "assets\documents\speedpasses"  # For named speedpasses (processing/emailing)
+$rawFolder = Join-Path $speedpassFolder "raw"
 
 # Ensure folders exist
-if (!(Test-Path $outputFolder)) { New-Item -ItemType Directory -Path $outputFolder }
+if (!(Test-Path $speedpassFolder)) { New-Item -ItemType Directory -Path $speedpassFolder }
 if (!(Test-Path $rawFolder)) { New-Item -ItemType Directory -Path $rawFolder }
 
 # Load SQLSatBR logo
@@ -158,7 +158,7 @@ function New-AttendeeSpeedpass {
         [string]$SqlSatLogoBase64,
         
         [Parameter(Mandatory)]
-        [string]$OutputFolder,
+        [string]$SpeedpassFolder,
         
         [Parameter(Mandatory)]
         [string]$RawFolder,
@@ -171,7 +171,7 @@ function New-AttendeeSpeedpass {
     $safeName = $nameLastFirst -replace '\s', '_' -replace '[^\w]', ''
 
     # Check if speedpass already exists (unless Force is used)
-    $pdfPath = Join-Path $OutputFolder "$safeName.pdf"
+    $pdfPath = Join-Path $SpeedpassFolder "$safeName.pdf"
     if ((Test-Path $pdfPath) -and !$Force) {
         Write-Host "Speedpass for $fullName already exists. Use -Force to regenerate." -ForegroundColor Yellow
         return $false
@@ -426,8 +426,8 @@ window.addEventListener("DOMContentLoaded", () => {
 "@
 
     # Save and generate PDF using Edge headless mode
-    $htmlPath = Join-Path $OutputFolder "$safeName.html"
-    $pdfPath = Join-Path $OutputFolder "$safeName.pdf"
+    $htmlPath = Join-Path $SpeedpassFolder "$safeName.html"
+    $pdfPath = Join-Path $SpeedpassFolder "$safeName.pdf"
     Set-Content -Path $htmlPath -Value $html -Encoding UTF8
 
     # Suppress Edge output by redirecting to null
@@ -766,7 +766,7 @@ Write-Host "Found $($attendees.Count) attendee(s) to process" -ForegroundColor G
 $processed = 0
 $skipped = 0
 foreach ($attendee in $attendees) {
-    $result = New-AttendeeSpeedpass -Attendee $attendee -SponsorLogos $sponsorLogos -SqlSatLogoBase64 $sqlSatLogoBase64 -OutputFolder $outputFolder -RawFolder $rawFolder -Force:$Force
+    $result = New-AttendeeSpeedpass -Attendee $attendee -SponsorLogos $sponsorLogos -SqlSatLogoBase64 $sqlSatLogoBase64 -SpeedpassFolder $speedpassFolder -RawFolder $rawFolder -Force:$Force
     if ($result -ne $false) {
         $processed++
     } else {
@@ -780,4 +780,4 @@ Write-Host "Processed: $processed" -ForegroundColor Green
 if ($skipped -gt 0) {
     Write-Host "Skipped: $skipped (already exist, use -Force to regenerate)" -ForegroundColor Yellow
 }
-Write-Host "Output folder: $outputFolder" -ForegroundColor Cyan
+Write-Host "Speedpass folder: $speedpassFolder" -ForegroundColor Cyan
