@@ -72,7 +72,7 @@ param(
 $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
 $projectRoot = Split-Path -Parent (Split-Path -Parent $scriptPath)
 $templateFolder = Join-Path $scriptPath "templates"
-if (-not $OutputFolder) { $OutputFolder = Join-Path $projectRoot "output\speedpasses" }
+if (-not $OutputFolder) { $OutputFolder = Join-Path $projectRoot "assets\documents\speedpasses" }
 
 # Load email templates
 function Get-EmailTemplate {

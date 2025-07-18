@@ -22,7 +22,7 @@ Write-Host "Generating SpeedPasses..."
 if ($WhatIf) {
     Write-Host "  Would generate SpeedPasses"
 } else {
-    & ".\speedpass-generation\Generate-SpeedPasses.ps1"
+    & ".\printable-materials\Generate-SpeedPasses.ps1"
     if ($LASTEXITCODE -ne 0) {
         Write-Host "ERROR: SpeedPass generation failed!" -ForegroundColor Red
         exit 1

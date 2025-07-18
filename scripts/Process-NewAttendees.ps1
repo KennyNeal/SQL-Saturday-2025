@@ -44,7 +44,7 @@ if (-not $SkipImport) {
 if (-not $SkipSpeedPasses) {
     Write-Host "`n2. Generating SpeedPasses for new attendees..."
     
-    $speedpassScript = Join-Path $rootPath "scripts\speedpass-generation\Generate-SpeedPasses.ps1"
+    $speedpassScript = Join-Path $rootPath "scripts\printable-materials\Generate-SpeedPasses.ps1"
     if (Test-Path $speedpassScript) {
         if ($WhatIf) {
             Write-Host "   Would run: $speedpassScript"

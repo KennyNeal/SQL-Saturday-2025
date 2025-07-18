@@ -43,8 +43,8 @@
     None. You cannot pipe objects to this script.
 
 .OUTPUTS
-    PDF files are generated in the output\speedpasses folder.
-    Raw QR code images are stored in output\speedpasses\raw folder.
+    PDF files are generated in the assets\documents\speedpasses folder.
+    Raw QR code images are stored in assets\documents\speedpasses\raw folder.
 
 .NOTES
     File Name      : Generate-SpeedPasses.ps1
@@ -77,7 +77,7 @@ $projectRoot = Split-Path -Parent (Split-Path -Parent $scriptPath)
 # Paths - Updated for new project structure
 $sqlSatLogoPath = Join-Path $projectRoot "assets\images\SQL_2025.png"
 $sponsorFolder = Join-Path $projectRoot "assets\images\Sponsor Logos\Raffle"
-$outputFolder = Join-Path $projectRoot "output\speedpasses"
+$outputFolder = Join-Path $projectRoot "assets\documents\speedpasses"
 $rawFolder = Join-Path $outputFolder "raw"
 
 # Ensure folders exist
