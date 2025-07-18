@@ -19,6 +19,9 @@
 .PARAMETER Force
     Overwrite existing speedpasses. Without this switch, only new/unprinted speedpasses will be generated.
 
+.PARAMETER Blank
+    Generate a blank speedpass template with lines for attendees to write their name and email address.
+
 .EXAMPLE
     .\Generate-SpeedPasses.ps1
     Generates all unprinted speedpasses.
@@ -39,12 +42,17 @@
     .\Generate-SpeedPasses.ps1 -Force
     Regenerates all speedpasses, overwriting existing ones.
 
+.EXAMPLE
+    .\Generate-SpeedPasses.ps1 -Blank
+    Generates a blank speedpass template for manual completion.
+
 .INPUTS
     None. You cannot pipe objects to this script.
 
 .OUTPUTS
     PDF files are generated in the assets\documents\speedpasses folder.
     Raw QR code images are stored in assets\documents\speedpasses\raw folder.
+    Blank speedpass templates are generated in the output folder for printing.
 
 .NOTES
     File Name      : Generate-SpeedPasses.ps1
@@ -63,7 +71,8 @@ param(
     [string]$FirstName,
     [string]$LastName,
     [string]$Email,
-    [switch]$Force
+    [switch]$Force,
+    [switch]$Blank
 )
 
 # CONFIGURATION
@@ -430,7 +439,276 @@ window.addEventListener("DOMContentLoaded", () => {
     return $true
 }
 
+# Function to generate blank speedpass template
+function New-BlankSpeedpass {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [hashtable]$SponsorLogos,
+        
+        [Parameter(Mandatory)]
+        [string]$SqlSatLogoBase64,
+        
+        [Parameter(Mandatory)]
+        [string]$ProjectRoot,
+        
+        [switch]$Force
+    )
+    
+    $outputFolder = Join-Path $ProjectRoot "output"
+    $pdfPath = Join-Path $outputFolder "Blank-SpeedPass.pdf"
+    $htmlPath = Join-Path $outputFolder "Blank-SpeedPass.html"
+    
+    # Ensure output folder exists
+    if (!(Test-Path $outputFolder)) { New-Item -ItemType Directory -Path $outputFolder }
+    
+    # Check if blank speedpass already exists (unless Force is used)
+    if ((Test-Path $pdfPath) -and !$Force) {
+        Write-Host "Blank speedpass already exists. Use -Force to regenerate." -ForegroundColor Yellow
+        return $false
+    }
+
+    # Build HTML with blank lines for manual completion
+    $html = @"
+<html><head>
+<style>
+body { margin: 0; padding: 0; font-family: Arial; }
+
+@page {
+  size: Letter;
+  margin: 0.35in;
+}
+
+.sheet {
+  display: grid;
+  grid-template-columns: repeat(2, 3.5in);
+  grid-template-rows: repeat(5, 2in);
+  padding: 0.25in;
+}
+.card {
+  width: 3.5in;
+  height: 2in;
+  border: 1px dashed #ccc;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: stretch;
+  position: relative;
+  padding: 0.5in 0.25in 0.2in 0.25in;
+  font-size: 9pt;
+  break-inside: avoid;
+}
+.left {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: flex-start;
+  flex: 1 1 0;
+  padding-right: 0.2in;
+  min-width: 1.5in;
+}
+.footer { 
+  margin-top: auto; 
+  font-size: 9pt; 
+  text-align: center;
+}
+.logo {
+  width: 1.5in;
+  height: 0.6in;
+  object-fit: contain;
+  margin-bottom: 0.05in;
+}
+.qr-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 1.4in;
+  min-width: 1.2in;
+}
+.qr-placeholder {
+  width: 1.2in;
+  height: 1.2in;
+  border: 2px dashed #999;
+  margin-bottom: 0.05in;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8pt;
+  color: #666;
+  text-align: center;
+}
+.card.nametag {
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  text-align: center;
+  font-size: 10pt;
+  padding: 0.1in;
+}
+.nametag-top {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 0.2in;
+}
+.nametag .logo {
+  width: 1in;
+  height: 1in;
+  object-fit: contain;
+}
+.admission { font-size: 10pt; font-weight: bold; }
+.ticket-banner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  font-size: 10pt;
+  font-weight: bold;
+  padding-top: 0.05in;
+}
+.blank-line {
+  border-bottom: 1px solid #333;
+  margin: 0.1in 0;
+  min-height: 0.15in;
+  width: 100%;
+}
+.blank-line-short {
+  border-bottom: 1px solid #333;
+  margin: 0.05in 0;
+  min-height: 0.12in;
+  width: 80%;
+}
+.label {
+  font-size: 8pt;
+  color: #666;
+  margin-bottom: 0.02in;
+}
+.raffle-name-area {
+  margin-top: 0.05in;
+  text-align: left;
+  width: 100%;
+}
+.email-area {
+  margin-top: 0.02in;
+  text-align: left;
+  width: 100%;
+}
+.nametag-info {
+  width: 100%;
+  height: 1.2in;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+</style>
+</head><body><div class="sheet">
+"@
+
+    # Header card - Admission Ticket
+    $html += @"
+<div class="card">
+  <div class="ticket-banner">#SQLSatBR 2025</div>
+  <div class="left">
+    <div class="admission">Admission Ticket</div>
+    <div class="label">Name (Last, First):</div>
+    <div class="blank-line"></div>
+    <div class="label">Email:</div>
+    <div class="blank-line"></div>
+    <div class="footer">SQL Saturday Baton Rouge 2025</div>
+  </div>
+</div>
+"@
+
+    # Raffle cards
+    foreach ($logo in $SponsorLogos.GetEnumerator()) {
+        $logoBase64 = $logo.Value.base64
+        $ext = $logo.Value.ext
+        $html += @"
+<div class="card">
+  <div class="ticket-banner">#SQLSatBR 2025 - Raffle Ticket</div>
+  <div class="left">
+    <div class="raffle-name-area">
+      <div class="label">Name:</div>
+      <div class="blank-line"></div>
+    </div>
+    <div class="email-area">
+      <div class="label">Email:</div>
+      <div class="blank-line"></div>
+    </div>
+  </div>
+  <div class="qr-block">
+    <img src="data:image/$ext;base64,$logoBase64" class="logo" />
+  </div>
+</div>
+"@
+    }
+    
+    # Nametag
+    $html += @"
+<div class="card nametag">
+  <div class="nametag-top">
+    <img src="data:image/png;base64,$SqlSatLogoBase64" class="logo" />
+  </div>
+  <div class="nametag-info">
+    <div class="label">Name:</div>
+    <div class="blank-line"></div>
+  </div>
+</div>
+</div>
+</body></html>
+"@
+
+    # Save and generate PDF using Edge headless mode
+    Set-Content -Path $htmlPath -Value $html -Encoding UTF8
+
+    # Try multiple Edge paths
+    $edgePaths = @(
+        "${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe",
+        "${env:ProgramFiles}\Microsoft\Edge\Application\msedge.exe"
+    )
+    
+    $edgePath = $null
+    foreach ($path in $edgePaths) {
+        if (Test-Path $path) {
+            $edgePath = $path
+            break
+        }
+    }
+    
+    if ($edgePath) {
+        try {
+            $null = & $edgePath --headless=new --print-to-pdf="$pdfPath" --no-margins "file:///$htmlPath" --disable-gpu --disable-extensions --no-pdf-header-footer 2>&1
+            Write-Host "Generated blank speedpass template: $pdfPath" -ForegroundColor Green
+        } catch {
+            Write-Host "Warning: Could not generate PDF. HTML file created at: $htmlPath" -ForegroundColor Yellow
+            Write-Host "Error: $($_.Exception.Message)" -ForegroundColor Red
+        }
+    } else {
+        Write-Host "Warning: Microsoft Edge not found. HTML file created at: $htmlPath" -ForegroundColor Yellow
+        Write-Host "You can manually convert the HTML to PDF using your preferred method." -ForegroundColor Yellow
+    }
+    
+    return $true
+}
+
 # Main execution logic
+# Handle blank speedpass generation
+if ($Blank) {
+    Write-Host "Generating blank speedpass template..." -ForegroundColor Cyan
+    $result = New-BlankSpeedpass -SponsorLogos $sponsorLogos -SqlSatLogoBase64 $sqlSatLogoBase64 -ProjectRoot $projectRoot -Force:$Force
+    if ($result) {
+        Write-Host "`n=== BLANK SPEEDPASS GENERATION COMPLETE ===" -ForegroundColor Green
+        Write-Host "Blank speedpass template created in: $projectRoot\output\Blank-SpeedPass.pdf" -ForegroundColor Cyan
+        Write-Host "This file is ready for printing!" -ForegroundColor Green
+    }
+    exit 0
+}
+
 # Validate parameters
 if ($FirstName -and !$LastName) {
     Write-Host "Error: When specifying -FirstName, you must also specify -LastName" -ForegroundColor Red
