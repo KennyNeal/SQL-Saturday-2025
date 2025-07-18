@@ -546,16 +546,118 @@ function New-TimeSlotGrid {
         
         # Handle special events
         if ($isSpecialEvent) {
-            [void]$htmlBuilder.AppendLine("<tr class='$specialEventType-row'>")
-            [void]$htmlBuilder.AppendLine("<td class='time-cell'>$time</td>")
-            $colspan = $roomsToInclude.Count
-            [void]$htmlBuilder.AppendLine("<td class='$specialEventType-cell' colspan='$colspan'>")
-            [void]$htmlBuilder.AppendLine("<div class='$specialEventType-title'>$specialEventTitle</div>")
-            if ($specialEventLocation) {
-                [void]$htmlBuilder.AppendLine("<div class='$specialEventType-room'>📍 $specialEventLocation</div>")
+            # Check if there are also regular sessions during this special event time
+            $regularSessionsInSlot = @()
+            if ($currentSlot) {
+                $regularSessionsInSlot = $currentSlot.rooms | Where-Object { 
+                    $_.session -and 
+                    -not $_.session.isServiceSession -and 
+                    -not $_.session.isPlenumSession 
+                }
             }
-            [void]$htmlBuilder.AppendLine("</td>")
-            [void]$htmlBuilder.AppendLine("</tr>")
+            
+            # If there are regular sessions during a special event (e.g., lunch session), show both
+            if ($regularSessionsInSlot.Count -gt 0) {
+                Write-Host "   ⏰ Special event at $timeSlot has $($regularSessionsInSlot.Count) concurrent regular sessions" -ForegroundColor Magenta
+                
+                # Show the special event in a smaller format
+                [void]$htmlBuilder.AppendLine("<tr class='mixed-event-row'>")
+                [void]$htmlBuilder.AppendLine("<td class='time-cell'>$time</td>")
+                
+                # Calculate how many columns should show lunch vs regular sessions
+                $lunchColumnCount = 0
+                $regularSessionRooms = @()
+                
+                foreach ($room in $roomsToInclude) {
+                    $sessionInRoom = $regularSessionsInSlot | Where-Object { $_.id -eq $room.id }
+                    if ($sessionInRoom -and $sessionInRoom.session) {
+                        $regularSessionRooms += $room
+                    } else {
+                        $lunchColumnCount++
+                    }
+                }
+                
+                # Show lunch columns first (combined if multiple)
+                if ($lunchColumnCount -gt 0) {
+                    [void]$htmlBuilder.AppendLine("<td class='$specialEventType-cell special-event-small' colspan='$lunchColumnCount'>")
+                    [void]$htmlBuilder.AppendLine("<div class='$specialEventType-title-small'>$specialEventTitle</div>")
+                    if ($specialEventLocation) {
+                        [void]$htmlBuilder.AppendLine("<div class='$specialEventType-room-small'>📍 $specialEventLocation</div>")
+                    }
+                    [void]$htmlBuilder.AppendLine("</td>")
+                }
+                
+                # Show regular sessions in remaining columns
+                foreach ($room in $regularSessionRooms) {
+                    $sessionInRoom = $regularSessionsInSlot | Where-Object { $_.id -eq $room.id }
+                    
+                    if ($sessionInRoom -and $sessionInRoom.session) {
+                        $session = $sessionInRoom.session
+                        $title = $session.title
+                        $speakers = ($session.speakers | ForEach-Object { $_.name }) -join ", "
+                        
+                        # Determine session level and track (same as regular sessions)
+                        $level = ""
+                        $track = ""
+                        $isLightningTalk = $title -match "Lightning Talk"
+                        $isKeynote = $session.isPlenumSession
+                        
+                        if (-not $isLightningTalk -and -not $isKeynote) { 
+                            # Parse categories array for level and track information
+                            if ($session.categories -and $session.categories.Count -gt 0) {
+                                # Find Level category
+                                $levelCategory = $session.categories | Where-Object { $_.name -eq "Level" }
+                                if ($levelCategory -and $levelCategory.categoryItems -and $levelCategory.categoryItems.Count -gt 0) {
+                                    $levelValue = $levelCategory.categoryItems[0].name
+                                    $level = "Level: " + $levelValue
+                                }
+                                
+                                # Find Track category
+                                $trackCategory = $session.categories | Where-Object { $_.name -eq "Track" }
+                                if ($trackCategory -and $trackCategory.categoryItems -and $trackCategory.categoryItems.Count -gt 0) {
+                                    $trackValue = $trackCategory.categoryItems[0].name
+                                    # Only show track if different from room name and not generic
+                                    if ($trackValue -ne $room.name -and $trackValue -notmatch "Room|Track") {
+                                        $track = $trackValue
+                                    }
+                                }
+                            }
+                        }
+                        
+                        [void]$htmlBuilder.AppendLine("<td class='session-cell'>")
+                        [void]$htmlBuilder.AppendLine("<div class='session-title'>$title</div>")
+                        if ($speakers) {
+                            [void]$htmlBuilder.AppendLine("<div class='session-speaker'>$speakers</div>")
+                        }
+                        
+                        # Show level for regular sessions
+                        if ($level) {
+                            [void]$htmlBuilder.AppendLine("<div class='session-level'>$level</div>")
+                        }
+                        
+                        # Show track information if available
+                        if ($track) {
+                            [void]$htmlBuilder.AppendLine("<div class='session-track'>Track: $track</div>")
+                        }
+                        
+                        [void]$htmlBuilder.AppendLine("</td>")
+                    }
+                }
+                
+                [void]$htmlBuilder.AppendLine("</tr>")
+            } else {
+                # No regular sessions, show special event across all columns as before
+                [void]$htmlBuilder.AppendLine("<tr class='$specialEventType-row'>")
+                [void]$htmlBuilder.AppendLine("<td class='time-cell'>$time</td>")
+                $colspan = $roomsToInclude.Count
+                [void]$htmlBuilder.AppendLine("<td class='$specialEventType-cell' colspan='$colspan'>")
+                [void]$htmlBuilder.AppendLine("<div class='$specialEventType-title'>$specialEventTitle</div>")
+                if ($specialEventLocation) {
+                    [void]$htmlBuilder.AppendLine("<div class='$specialEventType-room'>📍 $specialEventLocation</div>")
+                }
+                [void]$htmlBuilder.AppendLine("</td>")
+                [void]$htmlBuilder.AppendLine("</tr>")
+            }
             continue
         }
         
@@ -928,6 +1030,10 @@ function New-ScheduleCSS {
             background: #f8f9fa;
         }
         
+        .mixed-event-row {
+            background: #f8f9fa;
+        }
+        
         .keynote-row td {
             background: ${lightSecondaryColor} !important;
         }
@@ -940,6 +1046,18 @@ function New-ScheduleCSS {
             background: ${lightSecondaryColor} !important;
         }
         
+        /* Only apply special event background to special event cells in mixed rows */
+        .mixed-event-row .lunch-cell,
+        .mixed-event-row .keynote-cell,
+        .mixed-event-row .raffle-cell {
+            background: ${lightPrimaryColor} !important;
+        }
+        
+        /* Regular session cells in mixed rows keep default styling */
+        .mixed-event-row .session-cell {
+            background: #ffffff;
+        }
+        
         .keynote-cell, .lunch-cell, .raffle-cell {
             border: 2px solid $PrimaryColor;
             text-align: center;
@@ -947,10 +1065,26 @@ function New-ScheduleCSS {
             height: 40px;
         }
         
+        .special-event-small {
+            border: 2px solid $PrimaryColor;
+            text-align: center;
+            padding: 2px;
+            height: 80px;
+            font-size: 8px;
+        }
+        
         .keynote-title, .lunch-title, .raffle-title {
             font-weight: bold;
             color: $PrimaryColor;
             font-size: 9px;
+            margin-bottom: 1px;
+            line-height: 1.0;
+        }
+        
+        .keynote-title-small, .lunch-title-small, .raffle-title-small {
+            font-weight: bold;
+            color: $PrimaryColor;
+            font-size: 7px;
             margin-bottom: 1px;
             line-height: 1.0;
         }
@@ -966,6 +1100,14 @@ function New-ScheduleCSS {
             color: $PrimaryColor;
             font-weight: bold;
             font-size: 7px;
+            margin-top: 1px;
+            line-height: 1.0;
+        }
+        
+        .keynote-room-small, .lunch-room-small, .raffle-room-small {
+            color: $PrimaryColor;
+            font-weight: bold;
+            font-size: 6px;
             margin-top: 1px;
             line-height: 1.0;
         }
@@ -989,6 +1131,10 @@ function New-ScheduleCSS {
             
             .keynote-cell, .lunch-cell, .raffle-cell {
                 height: 50px;
+            }
+            
+            .special-event-small {
+                height: 75px;
             }
         }
 "@
