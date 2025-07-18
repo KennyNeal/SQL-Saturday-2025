@@ -1163,10 +1163,15 @@ Write-Host "📡 Fetching data from Sessionize API..." -ForegroundColor Green
 
 # Set default values for optional parameters - optimized path resolution
 if (-not $OutputPath) { 
-    # Default to assets/documents folder (relative to script location) - cache script directory
+    # Default to output folder (relative to script location) - cache script directory
     $script:scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
     $projectRoot = Split-Path (Split-Path $script:scriptDir -Parent) -Parent
-    $OutputPath = Join-Path $projectRoot "assets\documents\Schedule.html"
+    $OutputPath = Join-Path $projectRoot "output\Schedule.html"
+} elseif (-not [System.IO.Path]::IsPathRooted($OutputPath) -and -not $OutputPath.Contains('\') -and -not $OutputPath.Contains('/')) {
+    # OutputPath is just a filename - put it in the output folder
+    $script:scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+    $projectRoot = Split-Path (Split-Path $script:scriptDir -Parent) -Parent
+    $OutputPath = Join-Path $projectRoot "output\$OutputPath"
 }
 if (-not $RoomPrefix) { $RoomPrefix = "" }
 
