@@ -519,6 +519,12 @@ body { margin: 0; padding: 0; font-family: Arial; }
   object-fit: contain;
   margin-bottom: 0.05in;
 }
+.logo-small {
+  width: 1in;
+  height: 0.3in;
+  object-fit: contain;
+  margin-bottom: 0.06in;
+}
 .qr-block {
   display: flex;
   flex-direction: column;
@@ -559,6 +565,24 @@ body { margin: 0; padding: 0; font-family: Arial; }
   height: 1in;
   object-fit: contain;
 }
+.card.admission-blank {
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+  padding: 0.4in 0.25in 0.15in 0.25in;
+}
+.raffle-card-blank {
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+  padding: 0.4in 0.25in 0.15in 0.25in;
+}
+.logo-top {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin-bottom: 0.08in;
+}
 .admission { font-size: 10pt; font-weight: bold; }
 .ticket-banner {
   position: absolute;
@@ -572,23 +596,23 @@ body { margin: 0; padding: 0; font-family: Arial; }
 }
 .blank-line {
   border-bottom: 1px solid #333;
-  margin: 0.1in 0;
-  min-height: 0.15in;
+  margin: 0.06in 0;
+  min-height: 0.12in;
   width: 100%;
 }
 .blank-line-short {
   border-bottom: 1px solid #333;
-  margin: 0.05in 0;
-  min-height: 0.12in;
+  margin: 0.04in 0;
+  min-height: 0.1in;
   width: 80%;
 }
 .label {
   font-size: 8pt;
   color: #666;
-  margin-bottom: 0.02in;
+  margin-bottom: 0.01in;
 }
 .raffle-name-area {
-  margin-top: 0.05in;
+  margin-top: 0.02in;
   text-align: left;
   width: 100%;
 }
@@ -611,16 +635,14 @@ body { margin: 0; padding: 0; font-family: Arial; }
 
     # Header card - Admission Ticket
     $html += @"
-<div class="card">
+<div class="card admission-blank">
   <div class="ticket-banner">#SQLSatBR 2025</div>
-  <div class="left">
-    <div class="admission">Admission Ticket</div>
-    <div class="label">Name (Last, First):</div>
-    <div class="blank-line"></div>
-    <div class="label">Email:</div>
-    <div class="blank-line"></div>
-    <div class="footer">SQL Saturday Baton Rouge 2025</div>
-  </div>
+  <div class="admission">Admission Ticket</div>
+  <div class="label">Name (Last, First):</div>
+  <div class="blank-line"></div>
+  <div class="label">Email:</div>
+  <div class="blank-line"></div>
+  <div class="footer">SQL Saturday Baton Rouge 2025</div>
 </div>
 "@
 
@@ -629,20 +651,18 @@ body { margin: 0; padding: 0; font-family: Arial; }
         $logoBase64 = $logo.Value.base64
         $ext = $logo.Value.ext
         $html += @"
-<div class="card">
+<div class="card raffle-card-blank">
   <div class="ticket-banner">#SQLSatBR 2025 - Raffle Ticket</div>
-  <div class="left">
-    <div class="raffle-name-area">
-      <div class="label">Name:</div>
-      <div class="blank-line"></div>
-    </div>
-    <div class="email-area">
-      <div class="label">Email:</div>
-      <div class="blank-line"></div>
-    </div>
+  <div class="logo-top">
+    <img src="data:image/$ext;base64,$logoBase64" class="logo-small" />
   </div>
-  <div class="qr-block">
-    <img src="data:image/$ext;base64,$logoBase64" class="logo" />
+  <div class="raffle-name-area">
+    <div class="label">Name:</div>
+    <div class="blank-line"></div>
+  </div>
+  <div class="email-area">
+    <div class="label">Email:</div>
+    <div class="blank-line"></div>
   </div>
 </div>
 "@
@@ -655,7 +675,6 @@ body { margin: 0; padding: 0; font-family: Arial; }
     <img src="data:image/png;base64,$SqlSatLogoBase64" class="logo" />
   </div>
   <div class="nametag-info">
-    <div class="label">Name:</div>
     <div class="blank-line"></div>
   </div>
 </div>
