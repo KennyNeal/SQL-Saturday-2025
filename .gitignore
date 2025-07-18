@@ -3,7 +3,10 @@
 output/
 raw/
 documents/speedpasses/
-assets/documents/speedpasses/
+
+# Include speedpass output folder but ignore its contents
+assets/documents/speedpasses/*
+!assets/documents/speedpasses/.gitkeep
 
 # Ignore database files
 *.mdf
