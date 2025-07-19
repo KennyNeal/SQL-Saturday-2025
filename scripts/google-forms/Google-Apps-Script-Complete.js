@@ -713,3 +713,4 @@ function getSessionCount() {
   
   return sessions.length;
 }
+

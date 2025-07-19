@@ -9,6 +9,9 @@ param(
     [string]$FormsDataPath = ".\output\session-forms.csv",
     
     [Parameter(Mandatory = $false)]
+    [string]$GoogleSheetsUrl = "",
+    
+    [Parameter(Mandatory = $false)]
     [string]$OutputPath = ".\output\website"
 )
 
@@ -31,23 +34,128 @@ try {
     
     # Load form links (if available)
     $formsData = @{}
-    if (Test-Path $FormsDataPath) {
-        $formsCsv = Import-Csv $FormsDataPath
-        foreach ($form in $formsCsv) {
-            if ($form.FormUrl -and $form.FormUrl -ne "N/A") {
-                $formsData[$form.SessionTitle] = $form.FormUrl
+    
+    # Try Google Sheets URL first (new method)
+    if ($GoogleSheetsUrl) {
+        try {
+            Write-Host "📊 Attempting to load form data from Google Sheets..." -ForegroundColor Cyan
+            
+            # Convert Google Sheets URL to CSV export URL
+            $sheetsId = ""
+            if ($GoogleSheetsUrl -match "/spreadsheets/d/([a-zA-Z0-9-_]+)") {
+                $sheetsId = $Matches[1]
+                $csvUrl = "https://docs.google.com/spreadsheets/d/$sheetsId/export?format=csv&gid=0"
+                
+                Write-Host "📡 Trying to access: $csvUrl" -ForegroundColor Gray
+                
+                # Download CSV data
+                $csvData = Invoke-WebRequest -Uri $csvUrl -UseBasicParsing | ConvertFrom-Csv
+                
+                foreach ($row in $csvData) {
+                    if ($row.'Form URL' -and $row.'Form URL' -ne "N/A" -and $row.'Form URL' -ne "ERROR") {
+                        $formsData[$row.'Session Title'] = $row.'Form URL'
+                    }
+                }
+                
+                Write-Host "✓ Loaded $($formsData.Count) form links from Google Sheets" -ForegroundColor Green
+            } else {
+                Write-Host "❌ Invalid Google Sheets URL format" -ForegroundColor Red
             }
+        } catch {
+            Write-Host "⚠️  Failed to load from Google Sheets: $($_.Exception.Message)" -ForegroundColor Yellow
+            
+            if ($_.Exception.Message -match "401|Unauthorized") {
+                Write-Host "🔒 The Google Sheets appears to be private. To fix this:" -ForegroundColor Cyan
+                Write-Host "   1. Open your Google Sheets document" -ForegroundColor Cyan
+                Write-Host "   2. Click 'Share' in the top-right corner" -ForegroundColor Cyan
+                Write-Host "   3. Click 'Change to anyone with the link'" -ForegroundColor Cyan
+                Write-Host "   4. Set permission to 'Viewer'" -ForegroundColor Cyan
+                Write-Host "   5. Click 'Done' and try this script again" -ForegroundColor Cyan
+                Write-Host "   Alternative: Export the 'Form Links' sheet as CSV and use -FormsDataPath parameter" -ForegroundColor Yellow
+            }
+            
+            Write-Host "Will check for local CSV file..." -ForegroundColor Yellow
         }
-        Write-Host "✓ Loaded $($formsData.Count) form links" -ForegroundColor Green
-    } else {
-        Write-Host "⚠️  Forms data not found. Will generate template with placeholder links." -ForegroundColor Yellow
+    }
+    
+    # Fallback to local CSV file (old method)
+    if ($formsData.Count -eq 0 -and (Test-Path $FormsDataPath)) {
+        try {
+            Write-Host "📄 Loading form data from local CSV..." -ForegroundColor Cyan
+            
+            # Check if CSV has headers by looking at first line
+            $firstLine = Get-Content $FormsDataPath | Select-Object -First 1
+            $hasHeaders = $firstLine -match "Session Title|FormUrl|Form URL"
+            
+            if ($hasHeaders) {
+                # CSV with headers (new format)
+                $formsCsv = Import-Csv $FormsDataPath
+                foreach ($form in $formsCsv) {
+                    $urlField = if ($form.'Form URL') { $form.'Form URL' } else { $form.FormUrl }
+                    $titleField = if ($form.'Session Title') { $form.'Session Title' } else { $form.SessionTitle }
+                    
+                    if ($urlField -and $urlField -ne "N/A" -and $urlField -ne "ERROR") {
+                        $formsData[$titleField] = $urlField
+                    }
+                }
+            } else {
+                # CSV without headers (current format: Title,Speaker,Room,Time,FormURL,EditURL,Status)
+                # Use Import-Csv with custom headers since the data is structured
+                $tempCsvPath = ".\output\temp-session-forms.csv"
+                $csvContent = Get-Content $FormsDataPath
+                $csvWithHeaders = @("SessionTitle,Speaker,Room,StartTime,FormURL,EditURL,Status") + $csvContent
+                $csvWithHeaders | Set-Content $tempCsvPath
+                
+                $formsCsv = Import-Csv $tempCsvPath
+                foreach ($form in $formsCsv) {
+                    if ($form.FormURL -and $form.FormURL -ne "N/A" -and $form.FormURL -ne "ERROR" -and $form.FormURL.StartsWith("https://")) {
+                        $formsData[$form.SessionTitle] = $form.FormURL
+                    }
+                }
+                
+                # Clean up temp file
+                if (Test-Path $tempCsvPath) {
+                    Remove-Item $tempCsvPath -Force
+                }
+            }
+            
+            Write-Host "✓ Loaded $($formsData.Count) form links from local CSV" -ForegroundColor Green
+            
+        } catch {
+            Write-Host "⚠️  Failed to load CSV: $($_.Exception.Message)" -ForegroundColor Yellow
+        }
+    }
+    
+    # If no form data found
+    if ($formsData.Count -eq 0) {
+        Write-Host "⚠️  No form data found. Will generate template with placeholder links." -ForegroundColor Yellow
+        Write-Host "💡 To get real form links, choose one option:" -ForegroundColor Cyan
+        Write-Host "   Option 1 - Make Google Sheets public:" -ForegroundColor Cyan
+        Write-Host "     1. Open your Google Sheets from the Apps Script output" -ForegroundColor Cyan
+        Write-Host "     2. Click 'Share' → 'Change to anyone with the link' → 'Viewer'" -ForegroundColor Cyan
+        Write-Host "     3. Run: .\Generate-Website.ps1 -GoogleSheetsUrl 'YOUR_SHEETS_URL'" -ForegroundColor Cyan
+        Write-Host "   Option 2 - Export CSV manually:" -ForegroundColor Yellow
+        Write-Host "     1. Open your Google Sheets, go to 'Form Links' tab" -ForegroundColor Yellow
+        Write-Host "     2. File → Download → Comma Separated Values (.csv)" -ForegroundColor Yellow
+        Write-Host "     3. Save as .\output\session-forms.csv" -ForegroundColor Yellow
+        Write-Host "     4. Run: .\Generate-Website.ps1" -ForegroundColor Yellow
     }
     
     # Group sessions by room with precons prioritized
     $sessionsByRoom = @{}
     $preconSessions = @()
     
-    foreach ($session in $sessionsData.sessions) {
+    # The sessions.json now has a different structure - groups with sessions
+    $allSessions = @()
+    foreach ($group in $sessionsData) {
+        foreach ($session in $group.sessions) {
+            # Add room information from group
+            $session | Add-Member -NotePropertyName "room" -NotePropertyValue $group.groupName -Force
+            $allSessions += $session
+        }
+    }
+    
+    foreach ($session in $allSessions) {
         # Check if this is a precon first (usually longer sessions, often in LA Tech Park rooms)
         $isPrecon = $session.room -match "LA Tech Park" -or 
                    $session.title -match "Precon|Pre-Con|Half.?Day|Full.?Day" -or
@@ -411,11 +519,12 @@ try {
 
     <div class="step">
         <h3>Step 4: Update Form Links</h3>
-        <p>After you generate the actual Google Forms:</p>
+        <p>After you generate the actual Google Forms using Google Apps Script:</p>
         <ol>
-            <li>Run the main form generation script</li>
-            <li>Re-run this website generator (it will pick up the real form URLs)</li>
-            <li>Update your Google Site with the new HTML</li>
+            <li>Run <code>createSessionFeedbackForms()</code> in Google Apps Script</li>
+            <li>Copy the Google Sheets URL from the script output</li>
+            <li>Re-run the website generator: <code>.\Generate-Website.ps1 -GoogleSheetsUrl "YOUR_SHEETS_URL"</code></li>
+            <li>Update your Google Site with the new HTML that contains real form links</li>
         </ol>
     </div>
 
@@ -446,8 +555,16 @@ try {
     Write-Host "• Upload instructions: upload-instructions.html" -ForegroundColor White
     
     if ($formsData.Count -eq 0) {
-        Write-Host "`n💡 Note: Form links are placeholders until you generate the actual forms." -ForegroundColor Yellow
-        Write-Host "After running Generate-SessionFeedbackForms.ps1, run this script again to get real links." -ForegroundColor Yellow
+        Write-Host "`n💡 Note: Form links are placeholders until you create the actual forms." -ForegroundColor Yellow
+        Write-Host "To get real form links after running Google Apps Script:" -ForegroundColor Yellow
+        Write-Host "  Option A - Make Sheets public:" -ForegroundColor Cyan
+        Write-Host "    1. Open Google Sheets → Share → 'Anyone with link' → Viewer" -ForegroundColor Cyan
+        Write-Host "    2. Run: .\Generate-Website.ps1 -GoogleSheetsUrl 'SHEETS_URL'" -ForegroundColor Cyan
+        Write-Host "  Option B - Download CSV:" -ForegroundColor Yellow
+        Write-Host "    1. Download 'Form Links' sheet as CSV to .\output\session-forms.csv" -ForegroundColor Yellow
+        Write-Host "    2. Run: .\Generate-Website.ps1" -ForegroundColor Yellow
+    } else {
+        Write-Host "`n✅ Real form links integrated! Ready to upload to Google Sites." -ForegroundColor Green
     }
     
     # Open the main page for preview

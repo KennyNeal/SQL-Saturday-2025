@@ -1,12 +1,17 @@
 # Convert Session Data for Google Apps Script
 # This script converts sessions.json into JavaScript array format for Apps Script
+# NOTE: The current Google Apps Script already has manual session data built-in,
+# so this script is mainly useful for updating the data or creating new versions.
 
 param(
     [Parameter(Mandatory = $false)]
     [string]$SessionDataPath = ".\sessions.json",
     
     [Parameter(Mandatory = $false)]
-    [string]$OutputPath = ".\output\sessions-for-apps-script.js"
+    [string]$OutputPath = ".\output\sessions-for-apps-script.js",
+    
+    [Parameter(Mandatory = $false)]
+    [switch]$UpdateAppsScript = $false
 )
 
 Write-Host "🔄 Converting session data for Google Apps Script..." -ForegroundColor Green
@@ -50,9 +55,16 @@ try {
         New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
     }
     
-    # Generate JavaScript function
+    # Generate JavaScript function for Apps Script manual fallback
     $jsContent = @"
-function getSessionData() {
+/**
+ * Manual session data fallback (in case API access is blocked)
+ * This replaces the getManualSessionData() function in Google Apps Script
+ */
+function getManualSessionData() {
+  console.log('📋 Using manual session data...');
+  
+  // Complete session data for SQL Saturday 2025
   return [
 "@
     
@@ -102,9 +114,31 @@ function getSessionData() {
     Write-Host "📁 JavaScript file: $OutputPath" -ForegroundColor Cyan
     Write-Host "📁 CSV file: $csvPath" -ForegroundColor Cyan
     Write-Host "`n📋 Next steps:" -ForegroundColor Yellow
-    Write-Host "1. Copy the content of $OutputPath into your Google Apps Script" -ForegroundColor White
-    Write-Host "2. Replace the getSessionData() function in the Apps Script" -ForegroundColor White
-    Write-Host "3. Run the createSessionFeedbackForms() function" -ForegroundColor White
+    Write-Host "1. Copy the content of $OutputPath" -ForegroundColor White
+    Write-Host "2. In Google Apps Script, replace the getManualSessionData() function" -ForegroundColor White
+    Write-Host "3. Run getSessionCount() to verify $($validSessions.Count) sessions are detected" -ForegroundColor White
+    Write-Host "4. Run createSessionFeedbackForms() to generate all forms" -ForegroundColor White
+    
+    if ($UpdateAppsScript) {
+        Write-Host "`n🔄 Updating Google Apps Script file..." -ForegroundColor Cyan
+        $appsScriptPath = ".\Google-Apps-Script-Complete.js"
+        if (Test-Path $appsScriptPath) {
+            # Read the current Apps Script file
+            $appsScriptContent = Get-Content $appsScriptPath -Raw
+            
+            # Extract just the session data array from our generated JavaScript
+            $sessionDataOnly = $jsContent -replace '.*return \[', '' -replace '\];.*', ''
+            
+            # Update the getManualSessionData function in the Apps Script
+            $updatedContent = $appsScriptContent -replace '(function getManualSessionData\(\) \{[^}]*return \[)[^]]*(\];[^}]*\})', "`$1$sessionDataOnly`$2"
+            
+            # Save the updated file
+            $updatedContent | Set-Content $appsScriptPath -Encoding UTF8
+            Write-Host "✓ Updated Google Apps Script with new session data" -ForegroundColor Green
+        } else {
+            Write-Host "⚠️  Google Apps Script file not found at $appsScriptPath" -ForegroundColor Yellow
+        }
+    }
     
 } catch {
     Write-Host "❌ Error: $($_.Exception.Message)" -ForegroundColor Red

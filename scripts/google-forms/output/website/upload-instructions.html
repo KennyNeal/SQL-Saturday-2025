@@ -79,11 +79,12 @@
 
     <div class="step">
         <h3>Step 4: Update Form Links</h3>
-        <p>After you generate the actual Google Forms:</p>
+        <p>After you generate the actual Google Forms using Google Apps Script:</p>
         <ol>
-            <li>Run the main form generation script</li>
-            <li>Re-run this website generator (it will pick up the real form URLs)</li>
-            <li>Update your Google Site with the new HTML</li>
+            <li>Run <code>createSessionFeedbackForms()</code> in Google Apps Script</li>
+            <li>Copy the Google Sheets URL from the script output</li>
+            <li>Re-run the website generator: <code>.\Generate-Website.ps1 -GoogleSheetsUrl "YOUR_SHEETS_URL"</code></li>
+            <li>Update your Google Site with the new HTML that contains real form links</li>
         </ol>
     </div>
 
