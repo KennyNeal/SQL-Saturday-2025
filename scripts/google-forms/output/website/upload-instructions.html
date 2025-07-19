@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Instructions - SQL Saturday Feedback Site</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .header {
+            background: #667eea;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .step {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .step h3 {
+            margin-top: 0;
+            color: #495057;
+        }
+        code {
+            background: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+        .note {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Google Sites Upload Instructions</h1>
+        <p>How to upload your session feedback website</p>
+    </div>
+
+    <div class="step">
+        <h3>Step 1: Access Your Google Site</h3>
+        <p>Go to <strong>sites.google.com</strong> and open your existing Google Sites website.</p>
+    </div>
+
+    <div class="step">
+        <h3>Step 2: Create a New Page</h3>
+        <p>Click the <strong>+ (Plus)</strong> button to create a new page, or edit an existing page where you want to add the feedback forms.</p>
+    </div>
+
+    <div class="step">
+        <h3>Step 3: Embed HTML Content</h3>
+        <p>In your Google Site editor:</p>
+        <ol>
+            <li>Click <strong>Insert → Embed → Embed code</strong></li>
+            <li>Copy the contents of <code>index.html</code> from this folder</li>
+            <li>Paste it into the embed code box</li>
+            <li>Click <strong>Insert</strong></li>
+        </ol>
+    </div>
+
+    <div class="note">
+        <strong>Alternative Method:</strong> You can also copy sections of the HTML and paste them directly into Google Sites text blocks. The styling might be simplified, but the links will work.
+    </div>
+
+    <div class="step">
+        <h3>Step 4: Update Form Links</h3>
+        <p>After you generate the actual Google Forms:</p>
+        <ol>
+            <li>Run the main form generation script</li>
+            <li>Re-run this website generator (it will pick up the real form URLs)</li>
+            <li>Update your Google Site with the new HTML</li>
+        </ol>
+    </div>
+
+    <div class="step">
+        <h3>Step 5: Publish</h3>
+        <p>Click <strong>Publish</strong> in the top-right corner of your Google Site to make the changes live.</p>
+    </div>
+
+    <div class="note">
+        <strong>Files Generated:</strong><br>
+        • <code>index.html</code> - Main page with all rooms<br>
+        • <code>[Room-Name].html</code> - Individual room pages<br>
+        • <code>upload-instructions.html</code> - This instruction page
+    </div>
+
+</body>
+</html>
