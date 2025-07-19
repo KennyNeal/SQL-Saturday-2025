@@ -1,0 +1,10 @@
+Session Feedback Forms Generation Summary
+Generated on: 2025-07-19 16:25:24
+
+Total Forms Created: 0
+
+Forms by Room:
+
+
+All forms are now available for attendee feedback.
+Forms will automatically collect responses and can be accessed via the ResponsesUrl for each session.
