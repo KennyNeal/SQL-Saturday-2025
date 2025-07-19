@@ -39,3 +39,4 @@ obj/
 
 # Ignore NuGet packages
 *.nupkg
+scripts/google-forms/config/google-credentials.json

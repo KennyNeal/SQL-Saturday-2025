@@ -1,0 +1,3092 @@
+[
+  {
+    "groupId": 59769,
+    "groupName": "Auditorium",
+    "sessions": [
+      {
+        "questionAnswers": [],
+        "id": "856057",
+        "title": "Hashing: The Cornerstone of Blockchain Security and Data Integrity",
+        "description": null,
+        "startsAt": "2025-07-26T08:30:00",
+        "endsAt": "2025-07-26T09:30:00",
+        "isServiceSession": false,
+        "isPlenumSession": false,
+        "speakers": [
+          {
+            "id": "91482dc8-2276-4a60-b941-89e4ff610f36",
+            "name": "James Davis"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [
+              {
+                "id": 336547,
+                "name": "Regular Session (60 minutes)"
+              }
+            ],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [
+              {
+                "id": 336520,
+                "name": "Security"
+              }
+            ],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [
+              {
+                "id": 336524,
+                "name": "Intermediate"
+              }
+            ],
+            "sort": 3
+          }
+        ],
+        "roomId": 59769,
+        "room": "Auditorium",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": true
+      },
+      {
+        "questionAnswers": [],
+        "id": "875359",
+        "title": "Identify Poorly Performing Queries - Three Tools You Already Own",
+        "description": null,
+        "startsAt": "2025-07-26T09:40:00",
+        "endsAt": "2025-07-26T10:40:00",
+        "isServiceSession": false,
+        "isPlenumSession": false,
+        "speakers": [
+          {
+            "id": "3ee8f419-819e-4496-bfec-412f779eadab",
+            "name": "Grant Fritchey"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [
+              {
+                "id": 336547,
+                "name": "Regular Session (60 minutes)"
+              }
+            ],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [
+              {
+                "id": 336514,
+                "name": "SQL Server Administration"
+              }
+            ],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [
+              {
+                "id": 336524,
+                "name": "Intermediate"
+              }
+            ],
+            "sort": 3
+          }
+        ],
+        "roomId": 59769,
+        "room": "Auditorium",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": true
+      },
+      {
+        "questionAnswers": [],
+        "id": "972017",
+        "title": "Keynote - Artificial Intelligence: The Tale of Two Interns",
+        "description": null,
+        "startsAt": "2025-07-26T10:45:00",
+        "endsAt": "2025-07-26T11:15:00",
+        "isServiceSession": false,
+        "isPlenumSession": true,
+        "speakers": [
+          {
+            "id": "91482dc8-2276-4a60-b941-89e4ff610f36",
+            "name": "James Davis"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [],
+            "sort": 3
+          }
+        ],
+        "roomId": 59769,
+        "room": "Auditorium",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": true
+      },
+      {
+        "questionAnswers": [],
+        "id": "972995",
+        "title": "PrAIctical Engineering",
+        "description": null,
+        "startsAt": "2025-07-26T11:20:00",
+        "endsAt": "2025-07-26T12:20:00",
+        "isServiceSession": false,
+        "isPlenumSession": false,
+        "speakers": [
+          {
+            "id": "4800f5d0-02d9-4361-8044-849257de5f2d",
+            "name": "Cory Murray"
+          },
+          {
+            "id": "c9c4453c-a138-4566-8392-1ea2d9ea694e",
+            "name": "Bryan Fuselier"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [
+              {
+                "id": 336547,
+                "name": "Regular Session (60 minutes)"
+              }
+            ],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [
+              {
+                "id": 336545,
+                "name": "Other"
+              }
+            ],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [
+              {
+                "id": 336524,
+                "name": "Intermediate"
+              }
+            ],
+            "sort": 3
+          }
+        ],
+        "roomId": 59769,
+        "room": "Auditorium",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": true
+      },
+      {
+        "questionAnswers": [],
+        "id": "870167",
+        "title": "Building Scalable Data Warehouses with Microsoft Fabric:",
+        "description": null,
+        "startsAt": "2025-07-26T13:40:00",
+        "endsAt": "2025-07-26T14:40:00",
+        "isServiceSession": false,
+        "isPlenumSession": false,
+        "speakers": [
+          {
+            "id": "ca07cc3f-5f86-4608-8251-9631e2da2f33",
+            "name": "Jonathan Stewart"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [
+              {
+                "id": 336547,
+                "name": "Regular Session (60 minutes)"
+              }
+            ],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [
+              {
+                "id": 336521,
+                "name": "Analytics"
+              }
+            ],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [
+              {
+                "id": 336524,
+                "name": "Intermediate"
+              }
+            ],
+            "sort": 3
+          }
+        ],
+        "roomId": 59769,
+        "room": "Auditorium",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": true
+      },
+      {
+        "questionAnswers": [],
+        "id": "913156",
+        "title": "Common SQL Server Mistakes and How to Avoid Them",
+        "description": null,
+        "startsAt": "2025-07-26T14:45:00",
+        "endsAt": "2025-07-26T15:45:00",
+        "isServiceSession": false,
+        "isPlenumSession": false,
+        "speakers": [
+          {
+            "id": "fa3302e2-47b7-45c3-9c32-fae1fe636a35",
+            "name": "Tim Radney"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [
+              {
+                "id": 336547,
+                "name": "Regular Session (60 minutes)"
+              }
+            ],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [
+              {
+                "id": 336514,
+                "name": "SQL Server Administration"
+              }
+            ],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [
+              {
+                "id": 336524,
+                "name": "Intermediate"
+              }
+            ],
+            "sort": 3
+          }
+        ],
+        "roomId": 59769,
+        "room": "Auditorium",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": true
+      }
+    ],
+    "isDefault": false
+  },
+  {
+    "groupId": 59771,
+    "groupName": "BEC 1220 (Analytics)",
+    "sessions": [
+      {
+        "questionAnswers": [],
+        "id": "898502",
+        "title": "How to Diagnose a Slow Power BI Report",
+        "description": null,
+        "startsAt": "2025-07-26T08:30:00",
+        "endsAt": "2025-07-26T09:30:00",
+        "isServiceSession": false,
+        "isPlenumSession": false,
+        "speakers": [
+          {
+            "id": "d532b4f5-d1b2-4ade-a340-7f09edc40599",
+            "name": "Jason Romans"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [
+              {
+                "id": 336547,
+                "name": "Regular Session (60 minutes)"
+              }
+            ],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [
+              {
+                "id": 336521,
+                "name": "Analytics"
+              }
+            ],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [
+              {
+                "id": 336524,
+                "name": "Intermediate"
+              }
+            ],
+            "sort": 3
+          }
+        ],
+        "roomId": 59771,
+        "room": "BEC 1220 (Analytics)",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": true
+      },
+      {
+        "questionAnswers": [],
+        "id": "870864",
+        "title": "Applying Forensic Accounting Techniques using SQL and Python",
+        "description": null,
+        "startsAt": "2025-07-26T09:40:00",
+        "endsAt": "2025-07-26T10:40:00",
+        "isServiceSession": false,
+        "isPlenumSession": false,
+        "speakers": [
+          {
+            "id": "7c382501-a37f-49b7-bb28-eb7692995323",
+            "name": "Kevin Feasel"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [
+              {
+                "id": 336547,
+                "name": "Regular Session (60 minutes)"
+              }
+            ],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [
+              {
+                "id": 336521,
+                "name": "Analytics"
+              }
+            ],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [
+              {
+                "id": 336524,
+                "name": "Intermediate"
+              }
+            ],
+            "sort": 3
+          }
+        ],
+        "roomId": 59771,
+        "room": "BEC 1220 (Analytics)",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": true
+      },
+      {
+        "questionAnswers": [],
+        "id": "874753",
+        "title": "Mastering Microsoft Fabric Data Warehousing: Tips & Tricks You Need to Know",
+        "description": null,
+        "startsAt": "2025-07-26T11:20:00",
+        "endsAt": "2025-07-26T12:20:00",
+        "isServiceSession": false,
+        "isPlenumSession": false,
+        "speakers": [
+          {
+            "id": "626abf83-6d24-46d4-9985-1905e8020596",
+            "name": "Kristyna Ferris"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [
+              {
+                "id": 336547,
+                "name": "Regular Session (60 minutes)"
+              }
+            ],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [
+              {
+                "id": 336521,
+                "name": "Analytics"
+              }
+            ],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [
+              {
+                "id": 336524,
+                "name": "Intermediate"
+              }
+            ],
+            "sort": 3
+          }
+        ],
+        "roomId": 59771,
+        "room": "BEC 1220 (Analytics)",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": true
+      },
+      {
+        "questionAnswers": [],
+        "id": "925105",
+        "title": "Cutting Through the Buzz: LLM, Agents, RAG, and GPT - Making Sense of Generative AI",
+        "description": null,
+        "startsAt": "2025-07-26T13:40:00",
+        "endsAt": "2025-07-26T14:40:00",
+        "isServiceSession": false,
+        "isPlenumSession": false,
+        "speakers": [
+          {
+            "id": "b79fd52e-9d5f-4c73-b056-88b47aaf32dc",
+            "name": "Doug Leal"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [
+              {
+                "id": 336547,
+                "name": "Regular Session (60 minutes)"
+              }
+            ],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [
+              {
+                "id": 336521,
+                "name": "Analytics"
+              }
+            ],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [
+              {
+                "id": 336523,
+                "name": "Introductory and overview"
+              }
+            ],
+            "sort": 3
+          }
+        ],
+        "roomId": 59771,
+        "room": "BEC 1220 (Analytics)",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": true
+      },
+      {
+        "questionAnswers": [],
+        "id": "897236",
+        "title": "Unlocking Insights using Natural Language on Databricks Genie Spaces",
+        "description": null,
+        "startsAt": "2025-07-26T14:45:00",
+        "endsAt": "2025-07-26T15:45:00",
+        "isServiceSession": false,
+        "isPlenumSession": false,
+        "speakers": [
+          {
+            "id": "b101c900-b697-4707-a456-ccae1eff7f68",
+            "name": "Srikanth Kumar Rana"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [
+              {
+                "id": 336547,
+                "name": "Regular Session (60 minutes)"
+              }
+            ],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [
+              {
+                "id": 336521,
+                "name": "Analytics"
+              }
+            ],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [
+              {
+                "id": 336523,
+                "name": "Introductory and overview"
+              }
+            ],
+            "sort": 3
+          }
+        ],
+        "roomId": 59771,
+        "room": "BEC 1220 (Analytics)",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": true
+      }
+    ],
+    "isDefault": false
+  },
+  {
+    "groupId": 59772,
+    "groupName": "BEC 1225 (Professional Development)",
+    "sessions": [
+      {
+        "questionAnswers": [],
+        "id": "866639",
+        "title": "Leadership Principles Uncovered...",
+        "description": null,
+        "startsAt": "2025-07-26T08:30:00",
+        "endsAt": "2025-07-26T09:30:00",
+        "isServiceSession": false,
+        "isPlenumSession": false,
+        "speakers": [
+          {
+            "id": "9c6095d6-ebe1-4c5d-9fca-16116bf5f9cd",
+            "name": "Warren Sifre"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [
+              {
+                "id": 336547,
+                "name": "Regular Session (60 minutes)"
+              }
+            ],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [
+              {
+                "id": 336519,
+                "name": "Professional Development"
+              }
+            ],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [
+              {
+                "id": 336523,
+                "name": "Introductory and overview"
+              }
+            ],
+            "sort": 3
+          }
+        ],
+        "roomId": 59772,
+        "room": "BEC 1225 (Professional Development)",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": true
+      },
+      {
+        "questionAnswers": [],
+        "id": "932870",
+        "title": "How to Manage Recruiters and Hiring Managers in the Job Search",
+        "description": null,
+        "startsAt": "2025-07-26T09:40:00",
+        "endsAt": "2025-07-26T10:40:00",
+        "isServiceSession": false,
+        "isPlenumSession": false,
+        "speakers": [
+          {
+            "id": "de78fdd0-bd3d-446b-8a1f-bf41d644135e",
+            "name": "Ava McClain"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [
+              {
+                "id": 336547,
+                "name": "Regular Session (60 minutes)"
+              }
+            ],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [
+              {
+                "id": 336519,
+                "name": "Professional Development"
+              }
+            ],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [
+              {
+                "id": 336523,
+                "name": "Introductory and overview"
+              }
+            ],
+            "sort": 3
+          }
+        ],
+        "roomId": 59772,
+        "room": "BEC 1225 (Professional Development)",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": true
+      },
+      {
+        "questionAnswers": [],
+        "id": "870966",
+        "title": "Careers in IT Baton Rouge 2025",
+        "description": null,
+        "startsAt": "2025-07-26T11:20:00",
+        "endsAt": "2025-07-26T12:20:00",
+        "isServiceSession": false,
+        "isPlenumSession": false,
+        "speakers": [
+          {
+            "id": "f3281bba-36d8-4f77-8910-0ecf9d9e0e0d",
+            "name": "Michael Viron"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [
+              {
+                "id": 336547,
+                "name": "Regular Session (60 minutes)"
+              }
+            ],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [
+              {
+                "id": 336519,
+                "name": "Professional Development"
+              }
+            ],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [
+              {
+                "id": 336524,
+                "name": "Intermediate"
+              }
+            ],
+            "sort": 3
+          }
+        ],
+        "roomId": 59772,
+        "room": "BEC 1225 (Professional Development)",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": true
+      },
+      {
+        "questionAnswers": [],
+        "id": "917463",
+        "title": "Röck Yoür Cäreer: Time-Tested Wisdom from a 30-Year Software Engineering Veteran",
+        "description": null,
+        "startsAt": "2025-07-26T13:40:00",
+        "endsAt": "2025-07-26T14:40:00",
+        "isServiceSession": false,
+        "isPlenumSession": false,
+        "speakers": [
+          {
+            "id": "9f65cf94-df17-447d-b1e0-6a0fb0eb92a5",
+            "name": "David McCarter"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [
+              {
+                "id": 336547,
+                "name": "Regular Session (60 minutes)"
+              }
+            ],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [
+              {
+                "id": 336545,
+                "name": "Other"
+              }
+            ],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [
+              {
+                "id": 336523,
+                "name": "Introductory and overview"
+              }
+            ],
+            "sort": 3
+          }
+        ],
+        "roomId": 59772,
+        "room": "BEC 1225 (Professional Development)",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": true
+      },
+      {
+        "questionAnswers": [],
+        "id": "910969",
+        "title": "Tales from the SWAMP: Navigating the Murky Waters of Project Management",
+        "description": null,
+        "startsAt": "2025-07-26T14:45:00",
+        "endsAt": "2025-07-26T15:45:00",
+        "isServiceSession": false,
+        "isPlenumSession": false,
+        "speakers": [
+          {
+            "id": "f0dd5d75-4552-4c74-96fa-7b709bad7e8d",
+            "name": "Tanya Boyd"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [
+              {
+                "id": 336547,
+                "name": "Regular Session (60 minutes)"
+              }
+            ],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [
+              {
+                "id": 336519,
+                "name": "Professional Development"
+              }
+            ],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [
+              {
+                "id": 336524,
+                "name": "Intermediate"
+              }
+            ],
+            "sort": 3
+          }
+        ],
+        "roomId": 59772,
+        "room": "BEC 1225 (Professional Development)",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": true
+      }
+    ],
+    "isDefault": false
+  },
+  {
+    "groupId": 59773,
+    "groupName": "BEC 1305 (PowerShell/Automation)",
+    "sessions": [
+      {
+        "questionAnswers": [],
+        "id": "907942",
+        "title": "Mastering PowerShell Functions and Script Modules: Build, Reuse, and Share Your Code Like a Pro",
+        "description": null,
+        "startsAt": "2025-07-26T08:30:00",
+        "endsAt": "2025-07-26T09:30:00",
+        "isServiceSession": false,
+        "isPlenumSession": false,
+        "speakers": [
+          {
+            "id": "9ee43acd-0d80-43c5-8598-618a0420a9b1",
+            "name": "Mike Robbins"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [
+              {
+                "id": 336547,
+                "name": "Regular Session (60 minutes)"
+              }
+            ],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [
+              {
+                "id": 336518,
+                "name": "PowerShell/Automation"
+              }
+            ],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [
+              {
+                "id": 336524,
+                "name": "Intermediate"
+              }
+            ],
+            "sort": 3
+          }
+        ],
+        "roomId": 59773,
+        "room": "BEC 1305 (PowerShell/Automation)",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": true
+      },
+      {
+        "questionAnswers": [],
+        "id": "866232",
+        "title": "Extending Power BI with Power Automate",
+        "description": null,
+        "startsAt": "2025-07-26T09:40:00",
+        "endsAt": "2025-07-26T10:40:00",
+        "isServiceSession": false,
+        "isPlenumSession": false,
+        "speakers": [
+          {
+            "id": "1ee1778b-2efe-4a6f-afdd-2ecb86016da7",
+            "name": "Dominick Raimato"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [
+              {
+                "id": 336547,
+                "name": "Regular Session (60 minutes)"
+              }
+            ],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [
+              {
+                "id": 336518,
+                "name": "PowerShell/Automation"
+              }
+            ],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [
+              {
+                "id": 336524,
+                "name": "Intermediate"
+              }
+            ],
+            "sort": 3
+          }
+        ],
+        "roomId": 59773,
+        "room": "BEC 1305 (PowerShell/Automation)",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": true
+      },
+      {
+        "questionAnswers": [],
+        "id": "927368",
+        "title": "Don't Bash PowerShell",
+        "description": null,
+        "startsAt": "2025-07-26T11:20:00",
+        "endsAt": "2025-07-26T12:20:00",
+        "isServiceSession": false,
+        "isPlenumSession": false,
+        "speakers": [
+          {
+            "id": "f2fc61c6-9544-46d4-8edd-e1e963be1421",
+            "name": "Steven Judd"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [
+              {
+                "id": 336547,
+                "name": "Regular Session (60 minutes)"
+              }
+            ],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [
+              {
+                "id": 336518,
+                "name": "PowerShell/Automation"
+              }
+            ],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [
+              {
+                "id": 336523,
+                "name": "Introductory and overview"
+              }
+            ],
+            "sort": 3
+          }
+        ],
+        "roomId": 59773,
+        "room": "BEC 1305 (PowerShell/Automation)",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": true
+      },
+      {
+        "questionAnswers": [],
+        "id": "927810",
+        "title": "Getting Super Geeky with PowerShell Notebooks - It's Easy!",
+        "description": null,
+        "startsAt": "2025-07-26T13:40:00",
+        "endsAt": "2025-07-26T14:40:00",
+        "isServiceSession": false,
+        "isPlenumSession": false,
+        "speakers": [
+          {
+            "id": "5a075a9b-b1bc-4318-b66e-68d2712849d1",
+            "name": "Joe Houghes"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [
+              {
+                "id": 336547,
+                "name": "Regular Session (60 minutes)"
+              }
+            ],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [
+              {
+                "id": 336518,
+                "name": "PowerShell/Automation"
+              }
+            ],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [
+              {
+                "id": 336524,
+                "name": "Intermediate"
+              }
+            ],
+            "sort": 3
+          }
+        ],
+        "roomId": 59773,
+        "room": "BEC 1305 (PowerShell/Automation)",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": true
+      },
+      {
+        "questionAnswers": [],
+        "id": "915937",
+        "title": "Mastering Cursor: We're All Cooked (But in a Good Way)",
+        "description": null,
+        "startsAt": "2025-07-26T14:45:00",
+        "endsAt": "2025-07-26T15:45:00",
+        "isServiceSession": false,
+        "isPlenumSession": false,
+        "speakers": [
+          {
+            "id": "e1f2fced-f077-4b12-b987-68143304cfb4",
+            "name": "Brian Davis"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [
+              {
+                "id": 336547,
+                "name": "Regular Session (60 minutes)"
+              }
+            ],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [
+              {
+                "id": 336545,
+                "name": "Other"
+              }
+            ],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [
+              {
+                "id": 336525,
+                "name": "Advanced"
+              }
+            ],
+            "sort": 3
+          }
+        ],
+        "roomId": 59773,
+        "room": "BEC 1305 (PowerShell/Automation)",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": true
+      }
+    ],
+    "isDefault": false
+  },
+  {
+    "groupId": 59775,
+    "groupName": "BEC 1325 (.NET Development)",
+    "sessions": [
+      {
+        "questionAnswers": [],
+        "id": "923607",
+        "title": "Rapid Prototyping in the Age of AI",
+        "description": null,
+        "startsAt": "2025-07-26T08:30:00",
+        "endsAt": "2025-07-26T09:30:00",
+        "isServiceSession": false,
+        "isPlenumSession": false,
+        "speakers": [
+          {
+            "id": "3c829226-e7b6-410f-93af-95c09d82d580",
+            "name": "Tommy Parrish"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [
+              {
+                "id": 336547,
+                "name": "Regular Session (60 minutes)"
+              }
+            ],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [
+              {
+                "id": 336516,
+                "name": ".NET Development"
+              }
+            ],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [
+              {
+                "id": 336524,
+                "name": "Intermediate"
+              }
+            ],
+            "sort": 3
+          }
+        ],
+        "roomId": 59775,
+        "room": "BEC 1325 (.NET Development)",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": true
+      },
+      {
+        "questionAnswers": [],
+        "id": "853826",
+        "title": "Learn the basics of Git and GitHub workflow",
+        "description": null,
+        "startsAt": "2025-07-26T09:40:00",
+        "endsAt": "2025-07-26T10:40:00",
+        "isServiceSession": false,
+        "isPlenumSession": false,
+        "speakers": [
+          {
+            "id": "98c55736-05a9-4338-b652-42c0d26518f7",
+            "name": "Sean Wheeler"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [
+              {
+                "id": 336547,
+                "name": "Regular Session (60 minutes)"
+              }
+            ],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [
+              {
+                "id": 336516,
+                "name": ".NET Development"
+              }
+            ],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [
+              {
+                "id": 336524,
+                "name": "Intermediate"
+              }
+            ],
+            "sort": 3
+          }
+        ],
+        "roomId": 59775,
+        "room": "BEC 1325 (.NET Development)",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": true
+      },
+      {
+        "questionAnswers": [],
+        "id": "878750",
+        "title": "The Developer Testing Toolbox",
+        "description": null,
+        "startsAt": "2025-07-26T11:20:00",
+        "endsAt": "2025-07-26T12:20:00",
+        "isServiceSession": false,
+        "isPlenumSession": false,
+        "speakers": [
+          {
+            "id": "098f2999-a5b9-4d1c-aa92-11c0fc5c815e",
+            "name": "Jeremy Knight"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [
+              {
+                "id": 336547,
+                "name": "Regular Session (60 minutes)"
+              }
+            ],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [
+              {
+                "id": 336516,
+                "name": ".NET Development"
+              }
+            ],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [
+              {
+                "id": 336524,
+                "name": "Intermediate"
+              }
+            ],
+            "sort": 3
+          }
+        ],
+        "roomId": 59775,
+        "room": "BEC 1325 (.NET Development)",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": true
+      },
+      {
+        "questionAnswers": [],
+        "id": "923270",
+        "title": "Intro to Angular",
+        "description": null,
+        "startsAt": "2025-07-26T13:40:00",
+        "endsAt": "2025-07-26T14:40:00",
+        "isServiceSession": false,
+        "isPlenumSession": false,
+        "speakers": [
+          {
+            "id": "dc255546-f784-4c01-be3c-9a5eff358233",
+            "name": "Ryan Richard"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [
+              {
+                "id": 336547,
+                "name": "Regular Session (60 minutes)"
+              }
+            ],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [
+              {
+                "id": 336545,
+                "name": "Other"
+              }
+            ],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [
+              {
+                "id": 336523,
+                "name": "Introductory and overview"
+              }
+            ],
+            "sort": 3
+          }
+        ],
+        "roomId": 59775,
+        "room": "BEC 1325 (.NET Development)",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": true
+      },
+      {
+        "questionAnswers": [],
+        "id": "886220",
+        "title": "SQL Server Configuration Best Practices",
+        "description": null,
+        "startsAt": "2025-07-26T14:45:00",
+        "endsAt": "2025-07-26T15:45:00",
+        "isServiceSession": false,
+        "isPlenumSession": false,
+        "speakers": [
+          {
+            "id": "9d0a0d9d-bef7-40b6-a81a-ff09cdefa74e",
+            "name": "Ben Miller"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [
+              {
+                "id": 336547,
+                "name": "Regular Session (60 minutes)"
+              }
+            ],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [
+              {
+                "id": 336514,
+                "name": "SQL Server Administration"
+              }
+            ],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [
+              {
+                "id": 336524,
+                "name": "Intermediate"
+              }
+            ],
+            "sort": 3
+          }
+        ],
+        "roomId": 59775,
+        "room": "BEC 1325 (.NET Development)",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": true
+      }
+    ],
+    "isDefault": false
+  },
+  {
+    "groupId": 59778,
+    "groupName": "BEC 1409 (Cloud)",
+    "sessions": [
+      {
+        "questionAnswers": [],
+        "id": "875809",
+        "title": "Business Continuity in Azure SQL Databases",
+        "description": null,
+        "startsAt": "2025-07-26T08:30:00",
+        "endsAt": "2025-07-26T09:30:00",
+        "isServiceSession": false,
+        "isPlenumSession": false,
+        "speakers": [
+          {
+            "id": "8bcd6206-abbb-4553-8805-120acb00f2d6",
+            "name": "John Deardurff"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [
+              {
+                "id": 336547,
+                "name": "Regular Session (60 minutes)"
+              }
+            ],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [
+              {
+                "id": 336517,
+                "name": "Cloud"
+              }
+            ],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [
+              {
+                "id": 336524,
+                "name": "Intermediate"
+              }
+            ],
+            "sort": 3
+          }
+        ],
+        "roomId": 59778,
+        "room": "BEC 1409 (Cloud)",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": true
+      },
+      {
+        "questionAnswers": [],
+        "id": "863296",
+        "title": "Microsoft Fabric and Azure Health Data Services",
+        "description": null,
+        "startsAt": "2025-07-26T09:40:00",
+        "endsAt": "2025-07-26T10:40:00",
+        "isServiceSession": false,
+        "isPlenumSession": false,
+        "speakers": [
+          {
+            "id": "6375582a-11f3-4a89-b783-6e5869a1a217",
+            "name": "Jared Rhodes"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [
+              {
+                "id": 336547,
+                "name": "Regular Session (60 minutes)"
+              }
+            ],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [
+              {
+                "id": 336517,
+                "name": "Cloud"
+              }
+            ],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [
+              {
+                "id": 336525,
+                "name": "Advanced"
+              }
+            ],
+            "sort": 3
+          }
+        ],
+        "roomId": 59778,
+        "room": "BEC 1409 (Cloud)",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": true
+      },
+      {
+        "questionAnswers": [],
+        "id": "925285",
+        "title": "The Rise of AI Agents: What You Need to Know",
+        "description": null,
+        "startsAt": "2025-07-26T11:20:00",
+        "endsAt": "2025-07-26T12:20:00",
+        "isServiceSession": false,
+        "isPlenumSession": false,
+        "speakers": [
+          {
+            "id": "f4e0c0e2-0e49-487f-bf32-3d72a31df239",
+            "name": "Muralidhar Chouhan"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [
+              {
+                "id": 336547,
+                "name": "Regular Session (60 minutes)"
+              }
+            ],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [
+              {
+                "id": 336517,
+                "name": "Cloud"
+              }
+            ],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [
+              {
+                "id": 336524,
+                "name": "Intermediate"
+              }
+            ],
+            "sort": 3
+          }
+        ],
+        "roomId": 59778,
+        "room": "BEC 1409 (Cloud)",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": true
+      },
+      {
+        "questionAnswers": [],
+        "id": "902171",
+        "title": "SQL Server Hosting on AWS: Options and Considerations",
+        "description": null,
+        "startsAt": "2025-07-26T13:40:00",
+        "endsAt": "2025-07-26T14:40:00",
+        "isServiceSession": false,
+        "isPlenumSession": false,
+        "speakers": [
+          {
+            "id": "6153a8dc-f68c-48de-9b2f-642c320c38fe",
+            "name": "Alvaro Costa-Neto"
+          },
+          {
+            "id": "48cce932-82af-4eb9-8d78-d200511b0aba",
+            "name": "Chetan Nandikanti"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [
+              {
+                "id": 336547,
+                "name": "Regular Session (60 minutes)"
+              }
+            ],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [
+              {
+                "id": 336517,
+                "name": "Cloud"
+              }
+            ],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [
+              {
+                "id": 336524,
+                "name": "Intermediate"
+              }
+            ],
+            "sort": 3
+          }
+        ],
+        "roomId": 59778,
+        "room": "BEC 1409 (Cloud)",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": true
+      },
+      {
+        "questionAnswers": [],
+        "id": "912884",
+        "title": "Managing SQL Server with Azure Arc Unleashed",
+        "description": null,
+        "startsAt": "2025-07-26T14:45:00",
+        "endsAt": "2025-07-26T15:45:00",
+        "isServiceSession": false,
+        "isPlenumSession": false,
+        "speakers": [
+          {
+            "id": "55407a4b-1adf-4899-9a48-44856fb421ae",
+            "name": "David Pless"
+          },
+          {
+            "id": "2bbd1b60-4b25-4898-85bb-9dc1966c7375",
+            "name": "Abdullah Mamun"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [
+              {
+                "id": 336547,
+                "name": "Regular Session (60 minutes)"
+              }
+            ],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [
+              {
+                "id": 336517,
+                "name": "Cloud"
+              }
+            ],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [
+              {
+                "id": 336524,
+                "name": "Intermediate"
+              }
+            ],
+            "sort": 3
+          }
+        ],
+        "roomId": 59778,
+        "room": "BEC 1409 (Cloud)",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": true
+      }
+    ],
+    "isDefault": false
+  },
+  {
+    "groupId": 59776,
+    "groupName": "BEC 1425 (Cloud 2)",
+    "sessions": [
+      {
+        "questionAnswers": [],
+        "id": "862029",
+        "title": "The Collision of Real-Time Analytics and Observability",
+        "description": null,
+        "startsAt": "2025-07-26T08:30:00",
+        "endsAt": "2025-07-26T09:30:00",
+        "isServiceSession": false,
+        "isPlenumSession": false,
+        "speakers": [
+          {
+            "id": "54862e47-3754-4946-86fd-30761d54b438",
+            "name": "Barkha Herman"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [
+              {
+                "id": 336547,
+                "name": "Regular Session (60 minutes)"
+              }
+            ],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [
+              {
+                "id": 336521,
+                "name": "Analytics"
+              }
+            ],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [
+              {
+                "id": 336523,
+                "name": "Introductory and overview"
+              }
+            ],
+            "sort": 3
+          }
+        ],
+        "roomId": 59776,
+        "room": "BEC 1425 (Cloud 2)",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": true
+      },
+      {
+        "questionAnswers": [],
+        "id": "868505",
+        "title": "Using Digital Forensics for Data Loss Prevention (DLP)",
+        "description": null,
+        "startsAt": "2025-07-26T09:40:00",
+        "endsAt": "2025-07-26T10:40:00",
+        "isServiceSession": false,
+        "isPlenumSession": false,
+        "speakers": [
+          {
+            "id": "c572db74-9a9b-4626-b13f-bf5dc870b4c5",
+            "name": "Paresh Motiwala"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [
+              {
+                "id": 336547,
+                "name": "Regular Session (60 minutes)"
+              }
+            ],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [
+              {
+                "id": 336514,
+                "name": "SQL Server Administration"
+              }
+            ],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [
+              {
+                "id": 336524,
+                "name": "Intermediate"
+              }
+            ],
+            "sort": 3
+          }
+        ],
+        "roomId": 59776,
+        "room": "BEC 1425 (Cloud 2)",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": true
+      },
+      {
+        "questionAnswers": [],
+        "id": "920854",
+        "title": "Automate Your Documentation with Local AI",
+        "description": null,
+        "startsAt": "2025-07-26T11:20:00",
+        "endsAt": "2025-07-26T12:20:00",
+        "isServiceSession": false,
+        "isPlenumSession": false,
+        "speakers": [
+          {
+            "id": "a23aecdf-8161-4d9f-8388-4db52677998f",
+            "name": "Ian Trimble"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [
+              {
+                "id": 336547,
+                "name": "Regular Session (60 minutes)"
+              }
+            ],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [
+              {
+                "id": 336545,
+                "name": "Other"
+              }
+            ],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [
+              {
+                "id": 336524,
+                "name": "Intermediate"
+              }
+            ],
+            "sort": 3
+          }
+        ],
+        "roomId": 59776,
+        "room": "BEC 1425 (Cloud 2)",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": true
+      },
+      {
+        "questionAnswers": [],
+        "id": "876237",
+        "title": "Connecting Power BI to API using POST",
+        "description": null,
+        "startsAt": "2025-07-26T13:40:00",
+        "endsAt": "2025-07-26T14:00:00",
+        "isServiceSession": false,
+        "isPlenumSession": false,
+        "speakers": [
+          {
+            "id": "6e0c6896-2a12-4221-8094-00278ede38c2",
+            "name": "Russel Loski"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [
+              {
+                "id": 336546,
+                "name": "Lightning Talk (15-20 minutes)"
+              }
+            ],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [
+              {
+                "id": 336522,
+                "name": "Visualization"
+              }
+            ],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [
+              {
+                "id": 336524,
+                "name": "Intermediate"
+              }
+            ],
+            "sort": 3
+          }
+        ],
+        "roomId": 59776,
+        "room": "BEC 1425 (Cloud 2)",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": true
+      },
+      {
+        "questionAnswers": [],
+        "id": "928162",
+        "title": "Secure Communication Protocol for Distributed Environments",
+        "description": null,
+        "startsAt": "2025-07-26T14:00:00",
+        "endsAt": "2025-07-26T14:20:00",
+        "isServiceSession": false,
+        "isPlenumSession": false,
+        "speakers": [
+          {
+            "id": "c0c8ab19-e365-44ca-be50-3759647dca41",
+            "name": "Sravanthi Akavaram"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [
+              {
+                "id": 336546,
+                "name": "Lightning Talk (15-20 minutes)"
+              }
+            ],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [
+              {
+                "id": 336545,
+                "name": "Other"
+              }
+            ],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [
+              {
+                "id": 336524,
+                "name": "Intermediate"
+              }
+            ],
+            "sort": 3
+          }
+        ],
+        "roomId": 59776,
+        "room": "BEC 1425 (Cloud 2)",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": true
+      },
+      {
+        "questionAnswers": [],
+        "id": "959098",
+        "title": "Squeezing the Apple for All Its Juice",
+        "description": null,
+        "startsAt": "2025-07-26T14:20:00",
+        "endsAt": "2025-07-26T14:40:00",
+        "isServiceSession": false,
+        "isPlenumSession": false,
+        "speakers": [
+          {
+            "id": "427fae91-18ff-4f5e-9b9c-065f812c89c9",
+            "name": "Mike Sammartino"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [
+              {
+                "id": 336546,
+                "name": "Lightning Talk (15-20 minutes)"
+              }
+            ],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [
+              {
+                "id": 336545,
+                "name": "Other"
+              }
+            ],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [
+              {
+                "id": 336523,
+                "name": "Introductory and overview"
+              }
+            ],
+            "sort": 3
+          }
+        ],
+        "roomId": 59776,
+        "room": "BEC 1425 (Cloud 2)",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": true
+      },
+      {
+        "questionAnswers": [],
+        "id": "923478",
+        "title": "Who Needs a Warehouse When You've Got a Lakehouse?",
+        "description": null,
+        "startsAt": "2025-07-26T14:45:00",
+        "endsAt": "2025-07-26T15:05:00",
+        "isServiceSession": false,
+        "isPlenumSession": false,
+        "speakers": [
+          {
+            "id": "410b5f8d-3e6a-4582-853c-e8e13b9f9b99",
+            "name": "Nilanjan Chatterjee"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [
+              {
+                "id": 336546,
+                "name": "Lightning Talk (15-20 minutes)"
+              }
+            ],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [
+              {
+                "id": 336521,
+                "name": "Analytics"
+              }
+            ],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [
+              {
+                "id": 336524,
+                "name": "Intermediate"
+              }
+            ],
+            "sort": 3
+          }
+        ],
+        "roomId": 59776,
+        "room": "BEC 1425 (Cloud 2)",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": true
+      },
+      {
+        "questionAnswers": [],
+        "id": "859245",
+        "title": "Getting Started Getting Started with Containerization",
+        "description": null,
+        "startsAt": "2025-07-26T15:05:00",
+        "endsAt": "2025-07-26T15:25:00",
+        "isServiceSession": false,
+        "isPlenumSession": false,
+        "speakers": [
+          {
+            "id": "8cb67000-0a58-43ff-876b-e5a11cc954f9",
+            "name": "Garo Yeriazarian"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [
+              {
+                "id": 336546,
+                "name": "Lightning Talk (15-20 minutes)"
+              }
+            ],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [
+              {
+                "id": 336517,
+                "name": "Cloud"
+              }
+            ],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [
+              {
+                "id": 336523,
+                "name": "Introductory and overview"
+              }
+            ],
+            "sort": 3
+          }
+        ],
+        "roomId": 59776,
+        "room": "BEC 1425 (Cloud 2)",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": true
+      },
+      {
+        "questionAnswers": [],
+        "id": "859224",
+        "title": "Agentic AI in Construction – Transforming the Industry with Intelligent Solutions",
+        "description": null,
+        "startsAt": "2025-07-26T15:25:00",
+        "endsAt": "2025-07-26T15:45:00",
+        "isServiceSession": false,
+        "isPlenumSession": false,
+        "speakers": [
+          {
+            "id": "5dfd143e-2545-4b65-893e-3eb0765ae5ae",
+            "name": "Dr. Srikanth Bangaru"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [
+              {
+                "id": 336546,
+                "name": "Lightning Talk (15-20 minutes)"
+              }
+            ],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [
+              {
+                "id": 336545,
+                "name": "Other"
+              }
+            ],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [
+              {
+                "id": 336524,
+                "name": "Intermediate"
+              }
+            ],
+            "sort": 3
+          }
+        ],
+        "roomId": 59776,
+        "room": "BEC 1425 (Cloud 2)",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": true
+      }
+    ],
+    "isDefault": false
+  },
+  {
+    "groupId": 59774,
+    "groupName": "BEC 1920 (Security)",
+    "sessions": [
+      {
+        "questionAnswers": [],
+        "id": "859921",
+        "title": "High speed failover Clustering with RDMA/ROCE with Hyper-v over converged multigigabit networks",
+        "description": null,
+        "startsAt": "2025-07-26T08:30:00",
+        "endsAt": "2025-07-26T09:30:00",
+        "isServiceSession": false,
+        "isPlenumSession": false,
+        "speakers": [
+          {
+            "id": "3e135a04-60e3-4739-8b88-bdf5b2b36cab",
+            "name": "Christopher Long"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [
+              {
+                "id": 336547,
+                "name": "Regular Session (60 minutes)"
+              }
+            ],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [
+              {
+                "id": 336545,
+                "name": "Other"
+              }
+            ],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [
+              {
+                "id": 336525,
+                "name": "Advanced"
+              }
+            ],
+            "sort": 3
+          }
+        ],
+        "roomId": 59774,
+        "room": "BEC 1920 (Security)",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": true
+      },
+      {
+        "questionAnswers": [],
+        "id": "915316",
+        "title": "Strength in Partnerships: Cybersecurity and the Value of Vendor Management",
+        "description": null,
+        "startsAt": "2025-07-26T09:40:00",
+        "endsAt": "2025-07-26T10:40:00",
+        "isServiceSession": false,
+        "isPlenumSession": false,
+        "speakers": [
+          {
+            "id": "d27b3954-3ce8-42da-ba5b-7551aed69271",
+            "name": "Rachel Arnold"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [
+              {
+                "id": 336547,
+                "name": "Regular Session (60 minutes)"
+              }
+            ],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [
+              {
+                "id": 336520,
+                "name": "Security"
+              }
+            ],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [
+              {
+                "id": 336524,
+                "name": "Intermediate"
+              }
+            ],
+            "sort": 3
+          }
+        ],
+        "roomId": 59774,
+        "room": "BEC 1920 (Security)",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": false
+      },
+      {
+        "questionAnswers": [],
+        "id": "978597",
+        "title": "SQL Server 2025: an enterprise AI-ready database platform",
+        "description": null,
+        "startsAt": "2025-07-26T11:20:00",
+        "endsAt": "2025-07-26T12:20:00",
+        "isServiceSession": false,
+        "isPlenumSession": false,
+        "speakers": [
+          {
+            "id": "9d0a0d9d-bef7-40b6-a81a-ff09cdefa74e",
+            "name": "Ben Miller"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [
+              {
+                "id": 336547,
+                "name": "Regular Session (60 minutes)"
+              }
+            ],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [
+              {
+                "id": 336515,
+                "name": "SQL Server Development"
+              }
+            ],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [
+              {
+                "id": 336523,
+                "name": "Introductory and overview"
+              }
+            ],
+            "sort": 3
+          }
+        ],
+        "roomId": 59774,
+        "room": "BEC 1920 (Security)",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": true
+      },
+      {
+        "questionAnswers": [],
+        "id": "856518",
+        "title": "Let’s Hack a Database",
+        "description": null,
+        "startsAt": "2025-07-26T13:40:00",
+        "endsAt": "2025-07-26T14:40:00",
+        "isServiceSession": false,
+        "isPlenumSession": false,
+        "speakers": [
+          {
+            "id": "d2e1c175-b04a-4cec-b055-9e303b0fac97",
+            "name": "Miguel Solis"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [
+              {
+                "id": 336547,
+                "name": "Regular Session (60 minutes)"
+              }
+            ],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [
+              {
+                "id": 336520,
+                "name": "Security"
+              }
+            ],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [
+              {
+                "id": 336524,
+                "name": "Intermediate"
+              }
+            ],
+            "sort": 3
+          }
+        ],
+        "roomId": 59774,
+        "room": "BEC 1920 (Security)",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": true
+      },
+      {
+        "questionAnswers": [],
+        "id": "854588",
+        "title": "Narrative as a Design Tool",
+        "description": null,
+        "startsAt": "2025-07-26T14:45:00",
+        "endsAt": "2025-07-26T15:45:00",
+        "isServiceSession": false,
+        "isPlenumSession": false,
+        "speakers": [
+          {
+            "id": "5706e39d-8684-41d1-8841-cf2f6c07e20f",
+            "name": "Ricky Tucker"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [
+              {
+                "id": 336547,
+                "name": "Regular Session (60 minutes)"
+              }
+            ],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [
+              {
+                "id": 336545,
+                "name": "Other"
+              }
+            ],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [
+              {
+                "id": 336523,
+                "name": "Introductory and overview"
+              }
+            ],
+            "sort": 3
+          }
+        ],
+        "roomId": 59774,
+        "room": "BEC 1920 (Security)",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": true
+      }
+    ],
+    "isDefault": false
+  },
+  {
+    "groupId": 59781,
+    "groupName": "BEC 2520 (SQL Server Development)",
+    "sessions": [
+      {
+        "questionAnswers": [],
+        "id": "877283",
+        "title": "Streamlining DataOps in Fabric: Implementing Azure DevOps CI/CD Pipelines for Fabric SQL DB",
+        "description": null,
+        "startsAt": "2025-07-26T08:30:00",
+        "endsAt": "2025-07-26T09:30:00",
+        "isServiceSession": false,
+        "isPlenumSession": false,
+        "speakers": [
+          {
+            "id": "5c6782bc-7852-4986-b795-23c716942ca2",
+            "name": "Kevin Pereira"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [
+              {
+                "id": 336547,
+                "name": "Regular Session (60 minutes)"
+              }
+            ],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [
+              {
+                "id": 336515,
+                "name": "SQL Server Development"
+              }
+            ],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [
+              {
+                "id": 336523,
+                "name": "Introductory and overview"
+              }
+            ],
+            "sort": 3
+          }
+        ],
+        "roomId": 59781,
+        "room": "BEC 2520 (SQL Server Development)",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": true
+      },
+      {
+        "questionAnswers": [],
+        "id": "864826",
+        "title": "Modeling Software Development Problems in Time and Thinking Temporally",
+        "description": null,
+        "startsAt": "2025-07-26T09:40:00",
+        "endsAt": "2025-07-26T10:40:00",
+        "isServiceSession": false,
+        "isPlenumSession": false,
+        "speakers": [
+          {
+            "id": "82124ba0-88bc-47c8-857b-7be61b46fcc4",
+            "name": "Calvin Fabre"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [
+              {
+                "id": 336547,
+                "name": "Regular Session (60 minutes)"
+              }
+            ],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [
+              {
+                "id": 336515,
+                "name": "SQL Server Development"
+              }
+            ],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [
+              {
+                "id": 336525,
+                "name": "Advanced"
+              }
+            ],
+            "sort": 3
+          }
+        ],
+        "roomId": 59781,
+        "room": "BEC 2520 (SQL Server Development)",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": true
+      },
+      {
+        "questionAnswers": [],
+        "id": "926352",
+        "title": "README.md? We Can Do Better!",
+        "description": null,
+        "startsAt": "2025-07-26T11:20:00",
+        "endsAt": "2025-07-26T12:20:00",
+        "isServiceSession": false,
+        "isPlenumSession": false,
+        "speakers": [
+          {
+            "id": "9e027d23-d265-4e69-bbff-2e4e9e6bc0f3",
+            "name": "George Mauer"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [
+              {
+                "id": 336547,
+                "name": "Regular Session (60 minutes)"
+              }
+            ],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [
+              {
+                "id": 336519,
+                "name": "Professional Development"
+              }
+            ],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [
+              {
+                "id": 336524,
+                "name": "Intermediate"
+              }
+            ],
+            "sort": 3
+          }
+        ],
+        "roomId": 59781,
+        "room": "BEC 2520 (SQL Server Development)",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": true
+      },
+      {
+        "questionAnswers": [],
+        "id": "855952",
+        "title": "Natural Language Queries with ASP.NET",
+        "description": null,
+        "startsAt": "2025-07-26T13:40:00",
+        "endsAt": "2025-07-26T14:40:00",
+        "isServiceSession": false,
+        "isPlenumSession": false,
+        "speakers": [
+          {
+            "id": "4fdf3fcd-0306-4bab-b21c-8ae47dfbc926",
+            "name": "Glenn Rumfellow"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [
+              {
+                "id": 336547,
+                "name": "Regular Session (60 minutes)"
+              }
+            ],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [
+              {
+                "id": 336515,
+                "name": "SQL Server Development"
+              }
+            ],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [
+              {
+                "id": 336524,
+                "name": "Intermediate"
+              }
+            ],
+            "sort": 3
+          }
+        ],
+        "roomId": 59781,
+        "room": "BEC 2520 (SQL Server Development)",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": true
+      },
+      {
+        "questionAnswers": [],
+        "id": "904405",
+        "title": "The T-SQL JSON Operators",
+        "description": null,
+        "startsAt": "2025-07-26T14:45:00",
+        "endsAt": "2025-07-26T15:45:00",
+        "isServiceSession": false,
+        "isPlenumSession": false,
+        "speakers": [
+          {
+            "id": "79cd03cd-e20d-431d-89e4-b88ba17c0d52",
+            "name": "Jeff Foushee"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [
+              {
+                "id": 336547,
+                "name": "Regular Session (60 minutes)"
+              }
+            ],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [
+              {
+                "id": 336515,
+                "name": "SQL Server Development"
+              }
+            ],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [
+              {
+                "id": 336524,
+                "name": "Intermediate"
+              }
+            ],
+            "sort": 3
+          }
+        ],
+        "roomId": 59781,
+        "room": "BEC 2520 (SQL Server Development)",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": true
+      }
+    ],
+    "isDefault": false
+  },
+  {
+    "groupId": 59777,
+    "groupName": "LA Tech Park 1",
+    "sessions": [
+      {
+        "questionAnswers": [],
+        "id": "853829",
+        "title": "Become immediately effective with PowerShell",
+        "description": null,
+        "startsAt": "2025-07-25T08:00:00",
+        "endsAt": "2025-07-25T15:25:00",
+        "isServiceSession": false,
+        "isPlenumSession": false,
+        "speakers": [
+          {
+            "id": "98c55736-05a9-4338-b652-42c0d26518f7",
+            "name": "Sean Wheeler"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [
+              {
+                "id": 336544,
+                "name": "Preconference Workshop"
+              }
+            ],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [
+              {
+                "id": 336518,
+                "name": "PowerShell/Automation"
+              }
+            ],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [
+              {
+                "id": 336523,
+                "name": "Introductory and overview"
+              }
+            ],
+            "sort": 3
+          }
+        ],
+        "roomId": 59777,
+        "room": "LA Tech Park 1",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": true
+      }
+    ],
+    "isDefault": false
+  },
+  {
+    "groupId": 59780,
+    "groupName": "LA Tech Park 2",
+    "sessions": [
+      {
+        "questionAnswers": [],
+        "id": "876236",
+        "title": "Jumpstart Your Power BI Skills: A Handson Workshop",
+        "description": null,
+        "startsAt": "2025-07-25T08:00:00",
+        "endsAt": "2025-07-25T15:25:00",
+        "isServiceSession": false,
+        "isPlenumSession": false,
+        "speakers": [
+          {
+            "id": "6e0c6896-2a12-4221-8094-00278ede38c2",
+            "name": "Russel Loski"
+          }
+        ],
+        "categories": [
+          {
+            "id": 93747,
+            "name": "Session format",
+            "categoryItems": [
+              {
+                "id": 336544,
+                "name": "Preconference Workshop"
+              }
+            ],
+            "sort": 0
+          },
+          {
+            "id": 93748,
+            "name": "Track",
+            "categoryItems": [
+              {
+                "id": 336522,
+                "name": "Visualization"
+              }
+            ],
+            "sort": 2
+          },
+          {
+            "id": 93749,
+            "name": "Level",
+            "categoryItems": [
+              {
+                "id": 336523,
+                "name": "Introductory and overview"
+              }
+            ],
+            "sort": 3
+          }
+        ],
+        "roomId": 59780,
+        "room": "LA Tech Park 2",
+        "liveUrl": null,
+        "recordingUrl": null,
+        "status": "Accepted",
+        "isInformed": true,
+        "isConfirmed": true
+      }
+    ],
+    "isDefault": false
+  }
+]
