@@ -109,7 +109,17 @@ try {
                 $formsCsv = Import-Csv $tempCsvPath
                 foreach ($form in $formsCsv) {
                     if ($form.FormURL -and $form.FormURL -ne "N/A" -and $form.FormURL -ne "ERROR" -and $form.FormURL.StartsWith("https://")) {
-                        $formsData[$form.SessionTitle] = $form.FormURL
+                        # Store both the exact title and a normalized version for better matching
+                        $exactTitle = $form.SessionTitle.Trim()
+                        $formsData[$exactTitle] = $form.FormURL
+                        
+                        # Also store a normalized version (remove extra whitespace, normalize quotes and apostrophes)
+                        $normalizedTitle = $exactTitle -replace '\s+', ' '
+                        $normalizedTitle = $normalizedTitle -replace '"', '"' -replace '"', '"'
+                        $normalizedTitle = $normalizedTitle -replace [char]8217, "'" -replace [char]8216, "'" -replace '`', "'"
+                        if ($normalizedTitle -ne $exactTitle) {
+                            $formsData[$normalizedTitle] = $form.FormURL
+                        }
                     }
                 }
                 
@@ -141,47 +151,41 @@ try {
         Write-Host "     4. Run: .\Generate-Website.ps1" -ForegroundColor Yellow
     }
     
-    # Group sessions by room with precons prioritized
+    # Group sessions by room with precons grouped as "Precons"
     $sessionsByRoom = @{}
-    $preconSessions = @()
     
     # The sessions.json now has a different structure - groups with sessions
     $allSessions = @()
     foreach ($group in $sessionsData) {
         foreach ($session in $group.sessions) {
-            # Add room information from group
-            $session | Add-Member -NotePropertyName "room" -NotePropertyValue $group.groupName -Force
+            # Add room information from group, but group precons together
+            if ($group.groupName -match "LA Tech Park") {
+                $session | Add-Member -NotePropertyName "room" -NotePropertyValue "Precons" -Force
+            } else {
+                $session | Add-Member -NotePropertyName "room" -NotePropertyValue $group.groupName -Force
+            }
             $allSessions += $session
         }
     }
     
     foreach ($session in $allSessions) {
-        # Check if this is a precon first (usually longer sessions, often in LA Tech Park rooms)
-        $isPrecon = $session.room -match "LA Tech Park" -or 
-                   $session.title -match "Precon|Pre-Con|Half.?Day|Full.?Day" -or
-                   ($session.categories | Where-Object { $_.categoryItems | Where-Object { $_.name -match "Preconference" } })
-        
-        # Skip service sessions and non-feedback sessions, but NOT precons
+        # Skip service sessions and non-feedback sessions
         if ($session.isServiceSession -or 
-            ($session.title -match "Lunch|Break|Registration|Keynote|Welcome|Closing" -and -not $isPrecon) -or
+            $session.title -match "Lunch|Break|Registration|Keynote|Welcome|Closing" -or
             $session.roomId -eq 20946 -or $session.roomId -eq 20947) {
             continue
         }
         
-        if ($isPrecon) {
-            $preconSessions += $session
-        } else {
-            $roomName = $session.room
-            if (-not $sessionsByRoom.ContainsKey($roomName)) {
-                $sessionsByRoom[$roomName] = @()
-            }
-            $sessionsByRoom[$roomName] += $session
+        $roomName = $session.room
+        if (-not $sessionsByRoom.ContainsKey($roomName)) {
+            $sessionsByRoom[$roomName] = @()
         }
+        $sessionsByRoom[$roomName] += $session
     }
     
     # Calculate stats
-    $totalRooms = $sessionsByRoom.Keys.Count + ($preconSessions.Count -gt 0 ? 1 : 0)
-    $totalSessions = ($sessionsByRoom.Values | ForEach-Object { $_.Count } | Measure-Object -Sum).Sum + $preconSessions.Count
+    $totalRooms = $sessionsByRoom.Keys.Count
+    $totalSessions = ($sessionsByRoom.Values | ForEach-Object { $_.Count } | Measure-Object -Sum).Sum
     
     # Build HTML content more carefully - more compact design
     $htmlContent = @()
@@ -231,46 +235,23 @@ try {
     $htmlContent += '    </div>'
     $htmlContent += '    <div class="room-grid">'
 
-    # Add precons first (at the top)
-    if ($preconSessions.Count -gt 0) {
-        $sortedPrecons = $preconSessions | Sort-Object startsAt
-        
-        $htmlContent += '        <div class="room-card precon-card">'
-        $htmlContent += '            <h2 class="precon-header">🎯 Pre-Conference Sessions</h2>'
-        
-        foreach ($session in $sortedPrecons) {
-            $speakerNames = ($session.speakers | ForEach-Object { $_.name }) -join ", "
-            $sessionTime = ""
-            if ($session.startsAt) {
-                $startTime = [DateTime]::Parse($session.startsAt).ToString("h:mm tt")
-                $sessionTime = " - $startTime"
-            }
-            
-            # Clean up session title for HTML
-            $cleanTitle = $session.title -replace '"', '&quot;' -replace '<', '&lt;' -replace '>', '&gt;'
-            $cleanSpeakers = $speakerNames -replace '"', '&quot;' -replace '<', '&lt;' -replace '>', '&gt;'
-            
-            $formUrl = $formsData[$session.title]
-            $linkClass = if ($formUrl) { "feedback-link precon-link" } else { "feedback-link placeholder-link" }
-            $linkText = if ($formUrl) { "Feedback" } else { "Coming Soon" }
-            $linkHref = if ($formUrl) { $formUrl } else { "#" }
-            
-            $htmlContent += '            <div class="session-item">'
-            $htmlContent += "                <div class='session-title'>$cleanTitle</div>"
-            $htmlContent += "                <div class='session-speaker'>by $cleanSpeakers$sessionTime</div>"
-            $htmlContent += "                <a href='$linkHref' class='$linkClass' target='_blank'>$linkText</a>"
-            $htmlContent += '            </div>'
-        }
-        
-        $htmlContent += '        </div>'
+    # Sort rooms with precons first
+    $sortedRooms = $sessionsByRoom.Keys | Sort-Object { 
+        if ($_ -eq "Precons") { "0_$_" } else { "1_$_" }
     }
     
-    # Add regular room sections
-    foreach ($roomName in ($sessionsByRoom.Keys | Sort-Object)) {
+    # Add all room sections (including precons as one room)
+    foreach ($roomName in $sortedRooms) {
         $sessions = $sessionsByRoom[$roomName] | Sort-Object startsAt
         
-        $htmlContent += '        <div class="room-card regular-card">'
-        $htmlContent += "            <h2>$roomName</h2>"
+        # Determine if this is the precons room
+        $isPreconRoom = $roomName -eq "Precons"
+        $cardClass = if ($isPreconRoom) { "room-card precon-card" } else { "room-card regular-card" }
+        $headerClass = if ($isPreconRoom) { "precon-header" } else { "" }
+        $roomIcon = if ($isPreconRoom) { "🎯 " } else { "" }
+        
+        $htmlContent += "        <div class='$cardClass'>"
+        $htmlContent += "            <h2 class='$headerClass'>$roomIcon$roomName</h2>"
         
         foreach ($session in $sessions) {
             $speakerNames = ($session.speakers | ForEach-Object { $_.name }) -join ", "
@@ -284,8 +265,38 @@ try {
             $cleanTitle = $session.title -replace '"', '&quot;' -replace '<', '&lt;' -replace '>', '&gt;'
             $cleanSpeakers = $speakerNames -replace '"', '&quot;' -replace '<', '&lt;' -replace '>', '&gt;'
             
-            $formUrl = $formsData[$session.title]
-            $linkClass = if ($formUrl) { "feedback-link" } else { "feedback-link placeholder-link" }
+            # Try to find the form URL with multiple approaches
+            $formUrl = $null
+            
+            # First, try exact match
+            if ($formsData.ContainsKey($session.title)) {
+                $formUrl = $formsData[$session.title]
+            }
+            
+            # If no exact match, try normalized version
+            if (-not $formUrl) {
+                $normalizedSessionTitle = $session.title.Trim()
+                # Replace various quote and apostrophe characters
+                $normalizedSessionTitle = $normalizedSessionTitle -replace '\s+', ' '
+                $normalizedSessionTitle = $normalizedSessionTitle -replace '"', '"' -replace '"', '"'
+                $normalizedSessionTitle = $normalizedSessionTitle -replace [char]8217, "'" -replace [char]8216, "'" -replace '`', "'"
+                if ($formsData.ContainsKey($normalizedSessionTitle)) {
+                    $formUrl = $formsData[$normalizedSessionTitle]
+                }
+            }
+            
+            # If still no match, try case-insensitive search
+            if (-not $formUrl) {
+                $matchingKey = $formsData.Keys | Where-Object { $_ -ieq $session.title } | Select-Object -First 1
+                if ($matchingKey) {
+                    $formUrl = $formsData[$matchingKey]
+                }
+            }
+            $linkClass = if ($formUrl) { 
+                if ($isPreconRoom) { "feedback-link precon-link" } else { "feedback-link" }
+            } else { 
+                "feedback-link placeholder-link" 
+            }
             $linkText = if ($formUrl) { "Feedback" } else { "Coming Soon" }
             $linkHref = if ($formUrl) { $formUrl } else { "#" }
             
@@ -411,7 +422,34 @@ try {
                 $sessionTime = " - $startTime"
             }
             
-            $formUrl = $formsData[$session.title]
+            # Try to find the form URL with multiple approaches (same as main page)
+            $formUrl = $null
+            
+            # First, try exact match
+            if ($formsData.ContainsKey($session.title)) {
+                $formUrl = $formsData[$session.title]
+            }
+            
+            # If no exact match, try normalized version
+            if (-not $formUrl) {
+                $normalizedSessionTitle = $session.title.Trim()
+                # Replace various quote and apostrophe characters
+                $normalizedSessionTitle = $normalizedSessionTitle -replace '\s+', ' '
+                $normalizedSessionTitle = $normalizedSessionTitle -replace '"', '"' -replace '"', '"'
+                $normalizedSessionTitle = $normalizedSessionTitle -replace [char]8217, "'" -replace [char]8216, "'" -replace '`', "'"
+                if ($formsData.ContainsKey($normalizedSessionTitle)) {
+                    $formUrl = $formsData[$normalizedSessionTitle]
+                }
+            }
+            
+            # If still no match, try case-insensitive search
+            if (-not $formUrl) {
+                $matchingKey = $formsData.Keys | Where-Object { $_ -ieq $session.title } | Select-Object -First 1
+                if ($matchingKey) {
+                    $formUrl = $formsData[$matchingKey]
+                }
+            }
+            
             $linkClass = if ($formUrl) { "feedback-link" } else { "feedback-link placeholder-link" }
             $linkText = if ($formUrl) { "📝 Give Feedback for This Session" } else { "📝 Feedback Form Coming Soon" }
             $linkHref = if ($formUrl) { $formUrl } else { "#" }
