@@ -1,4 +1,11 @@
-function getSessionData() {
+/**
+ * Manual session data fallback (in case API access is blocked)
+ * This replaces the getManualSessionData() function in Google Apps Script
+ */
+function getManualSessionData() {
+  console.log('📋 Using manual session data...');
+  
+  // Complete session data for SQL Saturday 2025
   return [
     {
       title: "Hashing: The Cornerstone of Blockchain Security and Data Integrity",
