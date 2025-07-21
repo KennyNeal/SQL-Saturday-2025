@@ -51,7 +51,19 @@ EMAIL;TYPE=WORK,INTERNET,pref:' + ISNULL(a.Email, '') + '
 ADR;TYPE=WORK:;;' + '' + ';
 URL;TYPE=WORK:' + ISNULL(a.Website, '') + '
 URL:' + ISNULL(a.Blog, '') + '
-NOTE;ENCODING=QUOTED-PRINTABLE:SQL Saturday Baton Rouge 2025 Contact
+NOTE;ENCODING=QUOTED-PRINTABLE:SQL Saturday Baton Rouge 2025 Contact'
+        + CASE WHEN ISNULL(a.Job_Title, '') <> '' THEN ' | Job Title: ' + a.Job_Title ELSE '' END
+        + CASE WHEN ISNULL(a.Twitter_X_UserName, '') <> '' THEN ' | Nickname: ' + 
+            ISNULL(CASE
+                WHEN LEFT(a.Twitter_X_UserName, 1) <> '@' AND LEFT(a.Twitter_X_UserName, 2) <> '''@' THEN
+                    '@' + REPLACE(a.Twitter_X_UserName, 'https://twitter.com/', '')
+                WHEN LEFT(a.Twitter_X_UserName, 2) = '''@' THEN
+                    REPLACE(a.Twitter_X_UserName, '''@', '@')
+                ELSE
+                    a.Twitter_X_UserName
+            END, '')
+        ELSE '' END
+        + '
 END:VCARD
 '       AS VARCHAR(MAX)) AS vCard
     FROM
