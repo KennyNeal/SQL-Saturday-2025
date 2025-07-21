@@ -1,4 +1,4 @@
-CREATE VIEW [dbo].[AttendeesWithVCard]
+CREATE OR ALTER VIEW [dbo].[AttendeesWithVCard]
 AS
     SELECT
         TOP 100 PERCENT

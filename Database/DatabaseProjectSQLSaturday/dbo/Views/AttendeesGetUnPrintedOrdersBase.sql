@@ -1,4 +1,4 @@
-CREATE VIEW [dbo].[AttendeesGetUnPrintedOrdersBase]
+CREATE OR ALTER VIEW [dbo].[AttendeesGetUnPrintedOrdersBase]
 AS
     SELECT
         TOP 100 PERCENT
