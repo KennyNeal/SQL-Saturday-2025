@@ -104,6 +104,9 @@ Get-ChildItem -Path $sponsorFolder | Where-Object { $_.Extension -match '\.(png|
     $sponsorLogos[$_.Name] = @{ base64 = $logoBase64; ext = $ext }
 }
 
+# Load QRCoder DLL
+Add-Type -Path (Join-Path $projectRoot 'lib\QRCoder.dll')
+
 # Function to build query based on parameters
 function Get-AttendeeQuery {
     param(
@@ -160,9 +163,6 @@ function New-AttendeeSpeedpass {
         [Parameter(Mandatory)]
         [string]$SpeedpassFolder,
         
-        [Parameter(Mandatory)]
-        [string]$RawFolder,
-        
         [switch]$Force
     )
     
@@ -177,24 +177,26 @@ function New-AttendeeSpeedpass {
         return $false
     }
 
-    # Generate QR codes
-    $emailQRPath = Join-Path $RawFolder "$safeName-emailQR.png"
-    $orderQRPath = Join-Path $RawFolder "$safeName-orderQR.png"
-    $vCardQRPath = Join-Path $RawFolder "$safeName-vCardQR.png"
+    # Generate QR codes in memory using QRCoder
+    function GenerateQRCodeBase64 {
+        param([string]$data, [int]$pixelSize = 30, $eccLevel = [QRCoder.QRCodeGenerator+ECCLevel]::L)
+        $qrGenerator = New-Object QRCoder.QRCodeGenerator
+        $qrData = $qrGenerator.CreateQrCode($data, $eccLevel)
+        $qrCode = New-Object QRCoder.QRCode($qrData)
+        $bitmap = $qrCode.GetGraphic($pixelSize)
+        $ms = New-Object System.IO.MemoryStream
+        $bitmap.Save($ms, [System.Drawing.Imaging.ImageFormat]::Png)
+        $bytes = $ms.ToArray()
+        $ms.Dispose()
+        $bitmap.Dispose()
+        $qrCode.Dispose()
+        $qrGenerator.Dispose()
+        return [Convert]::ToBase64String($bytes)
+    }
 
-    if (!(Test-Path $emailQRPath) -or $Force) {
-        Invoke-WebRequest "https://api.qrserver.com/v1/create-qr-code/?data=$([System.Web.HttpUtility]::UrlEncode($Attendee.Email))&size=150x150" -OutFile $emailQRPath
-    }
-    if (!(Test-Path $orderQRPath) -or $Force) {
-        Invoke-WebRequest "https://api.qrserver.com/v1/create-qr-code/?data=$([System.Web.HttpUtility]::UrlEncode($Attendee.Barcode))&size=150x150" -OutFile $orderQRPath
-    }
-    if (!(Test-Path $vCardQRPath) -or $Force) {
-        Invoke-WebRequest "https://api.qrserver.com/v1/create-qr-code/?data=$([System.Web.HttpUtility]::UrlEncode($Attendee.vCardText))&size=150x150" -OutFile $vCardQRPath
-    }
-
-    $emailQRBase64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes($emailQRPath))
-    $orderQRBase64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes($orderQRPath))
-    $vCardQRBase64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes($vCardQRPath))
+    $emailQRBase64 = GenerateQRCodeBase64 -data $Attendee.Email
+    $orderQRBase64 = GenerateQRCodeBase64 -data $Attendee.Barcode
+    $vCardQRBase64 = GenerateQRCodeBase64 -data $attendee.vCardText
 
     # Build HTML
     $html = @"
@@ -785,7 +787,7 @@ Write-Host "Found $($attendees.Count) attendee(s) to process" -ForegroundColor G
 $processed = 0
 $skipped = 0
 foreach ($attendee in $attendees) {
-    $result = New-AttendeeSpeedpass -Attendee $attendee -SponsorLogos $sponsorLogos -SqlSatLogoBase64 $sqlSatLogoBase64 -SpeedpassFolder $speedpassFolder -RawFolder $rawFolder -Force:$Force
+    $result = New-AttendeeSpeedpass -Attendee $attendee -SponsorLogos $sponsorLogos -SqlSatLogoBase64 $sqlSatLogoBase64 -SpeedpassFolder $speedpassFolder -Force:$Force
     if ($result -ne $false) {
         $processed++
     } else {
