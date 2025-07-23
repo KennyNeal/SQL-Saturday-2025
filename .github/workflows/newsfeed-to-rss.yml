@@ -16,6 +16,10 @@ jobs:
           pip install markdown2 feedgen
           python .github/scripts/md2rss.py
 
+      - name: Set up authentication
+        run: |
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+
       - name: Commit RSS feed
         run: |
           git config --global user.name "github-actions"
