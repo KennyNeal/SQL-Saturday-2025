@@ -1,0 +1,25 @@
+name: Generate RSS Feed from Markdown
+
+on:
+  push:
+    paths:
+      - 'newsfeed.md'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Convert Markdown to RSS
+        run: |
+          pip install markdown2 feedgen
+          python .github/scripts/md2rss.py
+
+      - name: Commit RSS feed
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add newsfeed.xml
+          git commit -m "Update RSS feed" || echo "No changes to commit"
+          git push
