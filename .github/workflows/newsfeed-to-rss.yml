@@ -1,6 +1,7 @@
 name: Generate RSS Feed from Markdown
 
 on:
+  workflow_dispatch:
   push:
     paths:
       - 'newsfeed.md'
