@@ -28,7 +28,7 @@ fg.title('SQL Saturday News')
 fg.link(href='https://github.com/KennyNeal/SQL-Saturday-2025')
 fg.description('Latest news and updates for SQL Saturday Baton Rouge 2025')
 fg.id('https://github.com/KennyNeal/SQL-Saturday-2025/newsfeed.xml')
-fg.atom_link(href='https://kennyneal.github.io/SQL-Saturday-2025/newsfeed.xml', rel='self')
+# fg.atom_link(href='https://kennyneal.github.io/SQL-Saturday-2025/newsfeed.xml', rel='self')
 
 for date, content in items:
     fe = fg.add_entry()
