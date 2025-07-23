@@ -3,6 +3,7 @@ from feedgen.feed import FeedGenerator
 from datetime import datetime
 import re
 import zoneinfo
+from hashlib import sha1
 
 central = zoneinfo.ZoneInfo('America/Chicago')
 
@@ -26,6 +27,9 @@ fg = FeedGenerator()
 fg.title('SQL Saturday News')
 fg.link(href='https://github.com/KennyNeal/SQL-Saturday-2025')
 fg.description('Latest news and updates for SQL Saturday Baton Rouge 2025')
+fg.id('https://github.com/KennyNeal/SQL-Saturday-2025/newsfeed.xml')
+fg.load_extension('atom')
+fg.atom_link(href='https://kennyneal.github.io/SQL-Saturday-2025/newsfeed.xml', rel='self')
 
 for date, content in items:
     fe = fg.add_entry()
@@ -36,5 +40,7 @@ for date, content in items:
     except ValueError:
         pubdate = datetime.strptime(date, '%Y-%m-%d').replace(tzinfo=central)
     fe.pubDate(pubdate)
+    guid = sha1((date + content).encode('utf-8')).hexdigest()
+    fe.guid(guid, permalink=False)
 
 fg.rss_file('newsfeed.xml')
