@@ -2,6 +2,9 @@ import markdown2
 from feedgen.feed import FeedGenerator
 from datetime import datetime
 import re
+import zoneinfo
+
+central = zoneinfo.ZoneInfo('America/Chicago')
 
 with open('newsfeed.md', encoding='utf-8') as f:
     md = f.read()
@@ -28,6 +31,10 @@ for date, content in items:
     fe = fg.add_entry()
     fe.title(content[:60])  # Use the update as the title (truncate if needed)
     fe.description(markdown2.markdown(content))
-    fe.pubDate(datetime.strptime(date, '%Y-%m-%d'))
+    try:
+        pubdate = datetime.strptime(date, '%Y-%m-%d %H:%M').replace(tzinfo=central)
+    except ValueError:
+        pubdate = datetime.strptime(date, '%Y-%m-%d').replace(tzinfo=central)
+    fe.pubDate(pubdate)
 
 fg.rss_file('newsfeed.xml')
