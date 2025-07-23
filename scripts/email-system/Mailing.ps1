@@ -65,7 +65,8 @@ param(
     [int]$DelaySeconds = 2,
     [int]$BatchSize = 50,
     [ValidateSet("attendee", "volunteer")][string]$EmailType = "attendee",
-    [string]$TestEmail = ""
+    [string]$TestEmail = "",
+    [string[]]$ResendEmails = @()
 )
 
 # Use script location to find project root and set default paths
@@ -100,7 +101,22 @@ $volunteerTemplate = Get-EmailTemplate -TemplateName "volunteer-email" -Template
 
 switch ($EmailType) {
     "attendee" {
-        $getAttendeesQuery = "EXEC dbo.AttendeesGetForEmail"
+        if ($ResendEmails -and $ResendEmails.Count -gt 0) {
+            # Build a parameterized query for the provided emails
+            $emailParams = (@($ResendEmails | ForEach-Object { "'" + $_.Replace("'", "''") + "'" })) -join ","
+            $getAttendeesQuery = @"
+SELECT Barcode, First_Name, Last_Name, Email, Order_Date, Job_Title, Company
+FROM dbo.Attendees
+WHERE Email IN ($emailParams)
+  AND Email IS NOT NULL
+  AND Email != ''
+  AND First_Name IS NOT NULL
+  AND Last_Name IS NOT NULL
+ORDER BY Last_Name, First_Name
+"@
+        } else {
+            $getAttendeesQuery = "EXEC dbo.AttendeesGetForEmail"
+        }
         $subject = "See You at SQL Saturday Baton Rouge 2025!"
         $bodyTemplate = $attendeeTemplate
     }
@@ -169,8 +185,13 @@ try {
     return
 }
 
-# After fetching attendees, filter for test mode
-if ($TestEmail -and $TestEmail -ne "") {
+# After fetching attendees, filter for test mode and resend mode
+if ($ResendEmails -and $ResendEmails.Count -gt 0) {
+    $attendees = $attendees | Where-Object { $ResendEmails -contains $_.Email }
+    Write-Host "RESEND MODE: Only sending to addresses in ResendEmails array."
+    Write-Host ("  " + ($ResendEmails -join ", "))
+}
+elseif ($TestEmail -and $TestEmail -ne "") {
     $attendees = $attendees | Where-Object { $_.Email -eq $TestEmail }
     Write-Host "TEST MODE: Only sending to $TestEmail"
 }
